@@ -12,6 +12,7 @@ async function bootstrap() {
       'https://smart-factory.vercel.app',
       'https://*.vercel.app', // Allow all Vercel preview deployments
       'https://smart-factory-api-kox6.onrender.com', // Render API
+      'https://smart-factory-yhz5-c1j9bgolk.vercel.app', // Production frontend
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

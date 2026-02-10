@@ -54,5 +54,20 @@ export const api = {
             console.error(error);
             return { vibracao_alta: [], ultimas_paradas: [] };
         }
+    },
+
+    sendChat: async (message: string) => {
+        try {
+            const res = await fetch(`${API_URL}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+            if (!res.ok) throw new Error('Falha no chat');
+            return await res.json();
+        } catch (error) {
+            console.error(error);
+            return { reply: "Erro de conexão com o assistente." };
+        }
     }
 };

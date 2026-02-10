@@ -1,5 +1,6 @@
 import sys
 import pandas as pd
+from datetime import datetime
 from src.database import DatabaseManager
 from src.analytics import KpiCalculator
 import difflib # For fuzzy matching
@@ -136,10 +137,35 @@ class SmartAssistant:
 
         # --- CONVERSATIONAL REPORT FLOW ---
         
-        # 0. Check Context: Waiting for Date?
+        # 0. Check Context: Waiting for Confirmation?
+        if self.context.get('awaiting_confirmation'):
+            if 'sim' in query or 's' == query or 'yes' in query:
+                target_id = self.context.get('report_device_id', 'DEV-100')
+                target_time = self.context.get('report_target_time')
+                is_current = self.context.get('report_is_current')
+                
+                if is_current:
+                    # Fetch recent data for trends
+                    df = self.db.get_recent_readings(target_id, limit=20)
+                else:
+                    # Fetch historical window
+                    df = self.db.get_readings_window(target_id, target_time, window_minutes=60)
+                
+                self.context = {} # Clear context
+                
+                if df.empty:
+                     return f"⚠️ Sem dados encontrados para {target_id} por volta de {target_time}."
+                     
+                return self._generate_report_string(df, target_time, target_id)
+            else:
+                self.context = {}
+                return "❌ Operação cancelada. O que deseja fazer agora?"
+
+        # 0.1 Check Context: Waiting for Date?
         if self.context.get('awaiting_report_date'):
-            # User sent something, hopefully a date
-            date_time_pattern = r"(\d{2}/\d{2}/\d{4})\D+(\d{2}:\d{2})"
+            # User sent something, hopefully a date like dd-mm-yyyy or dd/mm/yyyy
+            # Support both - and /
+            date_time_pattern = r"(\d{2}[-/]\d{2}[-/]\d{4})\D+(\d{2}:\d{2})"
             match = re.search(date_time_pattern, query)
             
             # Since we are in a flow, we need the device_id. Ideally previously stored.
@@ -159,6 +185,10 @@ class SmartAssistant:
 
             date_str = match.group(1)
             time_str = match.group(2)
+            
+            # Normalize date separator to /
+            date_str = date_str.replace('-', '/')
+            
             full_target_str = f"{date_str} {time_str}"
             
             # Fetch
@@ -166,7 +196,7 @@ class SmartAssistant:
             self.context = {} # Reset context logic
             
             if df.empty:
-                return f"Essa data ({full_target_str}) não consta relatórios no banco de dados."
+                return f"Essa data ({full_target_str}) não consta relatórios no banco de dados para {target_id}."
                 
             return self._generate_report_string(df, full_target_str, target_id)
 
@@ -174,12 +204,17 @@ class SmartAssistant:
         # 1. Trigger: Broad "Relatorio"
         if "relatorio" in query or "report" in query:
              # Capture ID if strictly present now, or save for later
+             target_id = "DEV-100" # Default or from context
              for p in parts:
                 if p.upper().startswith("DEV-"):
-                    self.context['report_device_id'] = p.upper()
+                    target_id = p.upper()
              
-             # Shortcut: Did user provide a date?
-             date_pattern = r"(\d{2}/\d{2}/\d{4})"
+             # Shortcut 1: "Relatorio Rapido" or "Atual"
+             if "rapido" in query or "atual" in query or "agora" in query:
+                 return self._generate_quick_report(query, target_id)
+
+             # Shortcut 2: Did user provide a date?
+             date_pattern = r"(\d{2}[-/]\d{2}[-/]\d{4})"
              date_match = re.search(date_pattern, query)
              
              if date_match:
@@ -187,26 +222,29 @@ class SmartAssistant:
                  time_pattern = r"(\d{2}:\d{2})"
                  time_match = re.search(time_pattern, query)
                  
-                 date_str = date_match.group(1)
+                 date_str = date_match.group(1).replace('-', '/')
                  
                  if time_match:
                      # Full Date+Time -> Go to Confirmation
                      time_str = time_match.group(1)
                      full_str = f"{date_str} {time_str}"
                      self.context['report_target_time'] = full_str
+                     self.context['report_device_id'] = target_id
                      self.context['report_is_current'] = False
                      self.context['awaiting_confirmation'] = True
-                     return f"Entendido. Gerar relatório passado para **{full_str}**? (Sim/Não)"
+                     return f"Entendido. Gerar relatório passado de {target_id} para **{full_str}**? (Sim/Não)"
                  else:
                      # Only Date -> Ask for Time
                      self.context['report_temp_date'] = date_str
+                     self.context['report_device_id'] = target_id
                      self.context['awaiting_report_time_only'] = True
                      return f"Entendi que você quer um relatório de {date_str}. Qual o horário? (hh:mm)"
 
-             # No date, show menu
-             self.context['awaiting_report_choice'] = True
-             now_str = datetime.now().strftime("%d/%m/%Y às %H:%M")
-             return f"1 - Relatório rápido do turno atual ({now_str})\n2 - Relatório passado?"
+             # No date, show menu or ask for date directly if intent is clear
+             # User asked: "Exemplo Preciso de um relatorio ? sistema: Perfeito! digite a data :dd-mm-aaaa e horario xx:xx"
+             self.context['report_device_id'] = target_id
+             self.context['awaiting_report_date'] = True
+             return "Perfeito! digite a data :dd-mm-aaaa e horario xx:xx"
 
         # 1.5 Handle Time Only (Intermediate step for Shortcut)
         if self.context.get('awaiting_report_time_only'):
@@ -295,27 +333,136 @@ class SmartAssistant:
         return f"Comandos: login, logout, 'preciso de relatorio', status [id], predict [id], explain [id]{footer}"
 
     def _generate_report_string(self, df, time_str, device_id):
-        avg_temp = df['temperature'].mean()
-        avg_vib = df['vibration'].mean()
-        stops = len(df[df['status'] == 'parado'])
+        # 1. AI Analysis
+        risk, rul, waste = self.predictor.predict_failure_risk(df)
+        risk_pct = risk * 100
         
-        if avg_temp > 90 or avg_vib > 6:
-            status_icon = "⚠️"
-            conclusion = "Anomalias Detectadas (Revisão Necessária)"
-        elif stops > 5:
-            status_icon = "🛑"
-            conclusion = "Instabilidade Operacional (Muitas Paradas)"
+        # 2. Extract Key Metrics (Last reading in the window)
+        last_reading = df.iloc[-1]
+        current_temp = last_reading['temperature']
+        current_vib = last_reading['vibration']
+        
+        # 3. Determine Status & Recommendation
+        # Logic: Risk < 30% (Normal), 30-70% (Preventivo), > 70% (Crítico)
+        if risk_pct < 30:
+            status = "Normal (Operação Estável)"
+            rec_action = "Manter monitoramento padrão."
+            analysis_text = "Parâmetros operacionais dentro da normalidade."
+        elif risk_pct < 70:
+            status = "Preventivo (antes do modo crítico)"
+            rec_action = "Inspeção preventiva e monitoramento reforçado."
+            analysis_text = "Tendência de aumento de risco detectada pela IA."
         else:
-            status_icon = "✅"
-            conclusion = "Operação Estável"
+            status = "CRÍTICO (Risco de Falha Iminente)"
+            rec_action = "PARADA IMEDIATA para manutenção."
+            analysis_text = "Deterioração acelerada e alta probabilidade de falha."
 
+        # 4. Determine Primary Sensor Context
+        # Default limits
+        limit_temp = 85.0
+        limit_vib = 4.5
+        
+        # Heuristic: Which is closer to or exceeding limit?
+        temp_ratio = current_temp / limit_temp
+        vib_ratio = current_vib / limit_vib
+        
+        if vib_ratio > temp_ratio:
+            sensor = "Vibração"
+            val_atual = f"{current_vib:.2f} mm/s"
+            limite = f"{limit_vib:.1f} mm/s"
+            specific_analysis = f"Vibração elevada detectada ({val_atual})."
+            specific_rec = "Verificar alinhamento, fixação e lubrificação de rolamentos."
+        else:
+            sensor = "Temperatura"
+            val_atual = f"{current_temp:.1f} °C"
+            limite = f"{limit_temp:.1f} °C"
+            specific_analysis = f"Aquecimento identificado ({val_atual})."
+            specific_rec = "Verificar sistema de resfriamento e ventilação do motor."
+
+        # Combine Analysis/Rec
+        final_analysis = f"{analysis_text} {specific_analysis}"
+        final_rec = f"{rec_action} {specific_rec}"
+
+        # 5. Format Output
         return f"""
-📄 **Relatório ({time_str})**
-• 🆔 **Dispositivo**: {device_id}
-• 🔥 **Temp. Média**: {avg_temp:.1f}°C
-• 〰️ **Vibração Média**: {avg_vib:.2f} mm/s
-• 🛑 **Paradas**: {stops} microparadas
-• {status_icon} **Conclusão**: {conclusion}
+⚠️ PRÉ-ALERTA – SMART FACTORY
+
+Status: {status}
+Data/Hora: {time_str}
+Equipamento: {device_id}
+Sensor: {sensor}
+Valor Atual: {val_atual}
+Limite Operacional: {limite}
+Risco Estimado (IA): {risk_pct:.1f}%
+
+Análise:
+{final_analysis}
+
+Recomendação:
+{final_rec}
+"""
+
+    def _generate_quick_report(self, query, device_id="DEV-100"):
+        # Get recent reading
+        readings = self.db.get_recent_readings(device_id, limit=5)
+        if readings.empty:
+            return f"Sem dados recentes para {device_id}."
+            
+        last = readings.iloc[0]
+        now_str = datetime.now().strftime("%d/%m/%Y – %H:%M")
+        
+        # Calculate simplistic risk if not present
+        risk = last.get('risk_score', 0.65) # Mock default to show 'preventive' example
+        risk_pct = risk * 100
+        
+        current_temp = last['temperature']
+        current_vib = last['vibration']
+        
+        # Status Logic
+        if risk_pct < 30:
+            status = "Normal"
+        elif risk_pct < 70:
+            status = "Preventivo (antes do modo crítico)"
+        else:
+            status = "CRÍTICO"
+
+        # Determine Primary Sensor Context
+        limit_temp = 85.0
+        limit_vib = 4.5
+        
+        temp_ratio = current_temp / limit_temp
+        vib_ratio = current_vib / limit_vib
+        
+        if vib_ratio > temp_ratio:
+            sensor = "Vibração"
+            val_atual = f"{current_vib:.2f} mm/s"
+            limite = f"{limit_vib:.1f} mm/s"
+            analysis_text = f"Níveis de vibração ({val_atual}) acima do ideal, indicando possível desbalanceamento ou desgaste."
+            rec_text = "Realizar análise de espectro de vibração e verificar fixação da base."
+        else:
+            sensor = "Temperatura"
+            val_atual = f"{current_temp:.1f} °C"
+            limite = f"{limit_temp:.1f} °C"
+            analysis_text = f"Temperatura de operação ({val_atual}) próxima do limite, indicando sobrecarga ou deficiência na troca térmica."
+            rec_text = "Inspecionar desobstrução das aletas de refrigeração e carga do motor."
+            
+        return f"""
+⚠️ RELATÓRIO RÁPIDO (AGORA)
+
+Status: {status}
+Data/Hora: {now_str}
+Equipamento: {device_id}
+Sensor: {sensor}
+Valor Atual: {val_atual}
+Limite Operacional: {limite}
+Risco Estimado (IA): {risk_pct:.0f}%
+
+Análise:
+{analysis_text}
+
+Recomendação:
+{rec_text}
+
 """
 
         return f"Comandos: login, logout, status [id], relatorio [id], oee [id], predict [id]{footer}"

@@ -180,12 +180,12 @@ class AlertManager:
     
     def generate_report(self, alert_data: Dict) -> str:
         """
-        Gera relatório textual detalhado do alerta.
+        Gera relatório textual detalhado do alerta no formato solicitado.
         """
         level = alert_data['alert_level']
         is_critical = (level == 'critical')
         
-        # Header
+        # Header & Status
         if is_critical:
             header = "🚨 ALERTA CRÍTICO – SMART FACTORY"
             status = "CRÍTICO (ação imediata necessária)"
@@ -197,56 +197,52 @@ class AlertManager:
         dt = datetime.fromisoformat(alert_data['timestamp'])
         timestamp_str = dt.strftime("%d/%m/%Y – %H:%M")
         
+        # Identificar sensor principal (o com maior proximidade ou risco)
+        sensor_name = "Geral"
+        current_val = 0.0
+        limit_val = 0.0
+        unit = ""
+        
+        if alert_data['temp_proximity'] > alert_data['vib_proximity']:
+            sensor_name = "Temperatura"
+            current_val = alert_data['temperature']
+            limit_val = alert_data['temp_limit']
+            unit = "°C"
+        else:
+            sensor_name = "Vibração"
+            current_val = alert_data['vibration']
+            limit_val = alert_data['vib_limit']
+            unit = "mm/s"
+
         # Construir relatório
         report = f"""{header}
 
 Status: {status}
 Data/Hora: {timestamp_str}
 Equipamento: {alert_data['device_name']}
-ID: {alert_data['device_id']}
+Sensor: {sensor_name}
+Valor Atual: {current_val:.1f}{unit}
+Limite Operacional: {limit_val:.1f}{unit}
+Risco Estimado (IA): {alert_data['risk_score']*100:.0f}%
 
-📊 LEITURAS ATUAIS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Sensor: Temperatura
-Valor Atual: {alert_data['temperature']:.1f}°C
-Limite Operacional: {alert_data['temp_limit']:.1f}°C
-Proximidade: {alert_data['temp_proximity']*100:.1f}%
-
-Sensor: Vibração
-Valor Atual: {alert_data['vibration']:.2f} mm/s
-Limite Operacional: {alert_data['vib_limit']:.2f} mm/s
-Proximidade: {alert_data['vib_proximity']*100:.1f}%
-
-Sensor: Pressão
-Valor Atual: {alert_data['pressure']:.1f} bar
-
-🤖 ANÁLISE DA IA:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Risco Estimado: {alert_data['risk_score']*100:.1f}%
-Vida Útil Restante: {alert_data['rul_hours']:.1f} horas
-Desperdício Energético: {alert_data['energy_waste']:.1f}W
-Tendência: {alert_data['trend'].replace('_', ' ').title()}
-
-⚡ MOTIVOS DO ALERTA:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Análise:
 """
-        for i, reason in enumerate(alert_data['reasons'], 1):
-            report += f"{i}. {reason}\n"
-        
-        # Recomendações
-        report += "\n💡 RECOMENDAÇÕES:\n"
-        report += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        # Análise baseada na tendência e motivos
+        if alert_data['trend'] == 'increasing_abnormal':
+            report += "Tendência contínua de aumento acima do padrão histórico.\n"
+        elif alert_data['reasons']:
+            report += f"{alert_data['reasons'][0]}\n"
+        else:
+            report += "Variação detectada nos parâmetros operacionais.\n"
+
+        report += "\nRecomendação:\n"
         
         if is_critical:
-            report += "• Parar equipamento imediatamente\n"
-            report += "• Realizar inspeção técnica urgente\n"
-            report += "• Verificar sistema de refrigeração\n"
-            report += "• Contatar equipe de manutenção\n"
+            report += "Parada imediata e manutenção corretiva.\n"
         else:
-            report += "• Inspeção preventiva recomendada\n"
-            report += "• Monitoramento reforçado nas próximas horas\n"
-            report += "• Verificar condições operacionais\n"
-            report += "• Preparar equipe de manutenção (standby)\n"
+            report += "Inspeção preventiva e monitoramento reforçado nas próximas horas.\n"
+        
+        report += "\n📊 Print do dashboard em anexo.jpg"
         
         return report
     

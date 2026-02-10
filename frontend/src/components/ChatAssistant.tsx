@@ -1,11 +1,53 @@
 import { Send, User, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
+import { api } from '../services/api';
 
 interface Message {
     type: 'user' | 'ai';
     text: string;
 }
+
+const formatMessage = (text: string) => {
+    // Check if it's a report (contains specific headers)
+    if (text.includes('Status:') || text.includes('Risco Estimado')) {
+        return text.split('\n').map((line, i) => {
+            const keyStyle = "font-bold text-gray-300";
+            const valStyle = "text-white";
+
+            if (line.includes('Status:')) {
+                const parts = line.split('Status:');
+                const updateStatus = parts[1].trim();
+                let statusColor = "text-white";
+                if (updateStatus.includes('Crítico') || updateStatus.includes('CRÍTICO')) statusColor = "text-red-400 font-bold";
+                if (updateStatus.includes('Preventivo')) statusColor = "text-amber-400 font-bold";
+                if (updateStatus.includes('Normal')) statusColor = "text-emerald-400 font-bold";
+
+                return <div key={i}><span className={keyStyle}>Status:</span> <span className={statusColor}>{updateStatus}</span></div>;
+            }
+            if (line.includes('Risco Estimado (IA):')) {
+                const parts = line.split('Risco Estimado (IA):');
+                return <div key={i}><span className={keyStyle}>Risco Estimado (IA):</span> <span className="text-blue-400 font-bold">{parts[1]}</span></div>;
+            }
+
+            // Highlight other keys
+            const keys = ['Data/Hora:', 'Equipamento:', 'Sensor:', 'Valor Atual:', 'Limite Operacional:', 'Análise:', 'Recomendação:'];
+            for (const key of keys) {
+                if (line.startsWith(key) || line.includes(key)) {
+                    const parts = line.split(key);
+                    return <div key={i}><span className={keyStyle}>{key}</span> <span className={valStyle}>{parts[1]}</span></div>;
+                }
+            }
+            // Headers like "⚠️ PRÉ-ALERTA..."
+            if (line.includes('⚠️')) {
+                return <div key={i} className="font-bold text-lg mb-2 text-white">{line}</div>;
+            }
+
+            return <div key={i} className="min-h-[1.2em]">{line}</div>;
+        });
+    }
+    return text;
+};
 
 export const ChatAssistant = () => {
     const [messages, setMessages] = useState<Message[]>([
@@ -23,131 +65,22 @@ export const ChatAssistant = () => {
         scrollToBottom();
     }, [messages, isLoading]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim() || isLoading) return;
 
         const userText = inputText;
-        const lowerText = userText.toLowerCase();
         setInputText('');
         setMessages(prev => [...prev, { type: 'user', text: userText }]);
         setIsLoading(true);
 
-        // Simulate AI "Thinking" and "Analyzing"
-        setTimeout(() => {
+        try {
+            const data = await api.sendChat(userText);
+            setMessages(prev => [...prev, { type: 'ai', text: data.reply }]);
+        } catch (error) {
+            setMessages(prev => [...prev, { type: 'ai', text: "Desculpe, não consegui conectar ao servidor." }]);
+        } finally {
             setIsLoading(false);
-
-            let response = "";
-
-            // Regex for time detection (e.g., 14:00, 14h, 14 as 15)
-            const timeMatch = lowerText.match(/(\d{1,2})([:h.]\d{0,2})?(\s*(até|as|às|-)\s*(\d{1,2})([:h.]\d{0,2})?)?/);
-            const detectedTime = timeMatch ? timeMatch[0] : null;
-
-            // Greeting Logic
-            if (lowerText.match(/^(ola|oi|olá|bom dia|boa tarde|boa noite)/)) {
-                response = "Olá! Sou a IA da Smart Factory. Monitoro a planta 24h. Posso gerar relatórios, checar status de máquinas ou explicar siglas. Como posso ajudar?";
-            }
-
-            // --- CONCEPTS (Knowledge Base) ---
-            else if (lowerText.includes('o que é') || lowerText.includes('significa') || lowerText.includes('definição')) {
-                if (lowerText.includes('oee')) {
-                    response = `📚 **OEE (Overall Equipment Effectiveness)**\n\nÉ a **Eficiência Global do Equipamento**. Mede o quão produtiva é sua fabricação.\n\n• **Cálculo**: Disponibilidade × Performance × Qualidade\n• **Meta**: > 85% (Classe Mundial)`;
-                } else if (lowerText.includes('mtbf')) {
-                    response = `📚 **MTBF (Mean Time Between Failures)**\n\nÉ o **Tempo Médio Entre Falhas**. Indica a confiabilidade da máquina.\n\nQuanto **maior**, melhor. Significa que o equipamento roda mais tempo sem quebrar.`;
-                } else if (lowerText.includes('mttr')) {
-                    response = `📚 **MTTR (Mean Time To Repair)**\n\nÉ o **Tempo Médio de Reparo**. Mede a agilidade da manutenção.\n\nQuanto **menor**, melhor. O objetivo é consertar rápido para voltar a produzir.`;
-                } else if (lowerText.includes('kpi')) {
-                    response = `📚 **KPIs da Planta**\n\nMonitoramos:\n• **OEE**: 82% (Eficiência)\n• **MTBF**: 320h (Confiabilidade)\n• **MTTR**: 45m (Agilidade)\n• **Disponibilidade**: 94%`;
-                } else {
-                    response = "Posso explicar sobre OEE, MTBF, MTTR, KPIs e outros termos. O que você gostaria de saber?";
-                }
-            }
-
-            // --- STATUS & MONITORING (New Block for "Status") ---
-            else if (lowerText.includes('status') || lowerText.includes('como está') || lowerText.includes('situação')) {
-                const timeCtx = detectedTime ? `em ${detectedTime}` : "agora";
-
-                if (lowerText.includes('14:00') || lowerText.includes('14h')) {
-                    // Specific mocked response for the user example
-                    response = `🕒 **Status às 14:00**\n` +
-                        `• 🏭 **Produção**: Pico de carga (98% cap.)\n` +
-                        `• 🌡️ **Temperatura**: 72°C (Leve aumento)\n` +
-                        `• ✅ **Equipamentos**: Todos Operacionais`;
-                } else {
-                    response = `🔎 **Status Geral da Planta (${timeCtx})**\n` +
-                        `• 🟢 **Operação**: Normal\n` +
-                        `• 📉 **Perda Acumulada**: 2.1%\n` +
-                        `• ⚡ **Consumo**: Dentro da meta\n\nTodos os sensores indicam estabilidade no momento.`;
-                }
-            }
-
-            // --- REPORTS (Simple & Complex) ---
-            else if (lowerText.includes('relatório') || lowerText.includes('relatorio')) {
-                const timeStr = detectedTime || "do Turno Atual";
-
-                if (lowerText.includes('complexo') || lowerText.includes('detalhado')) {
-                    response = `📑 **Relatório Detalhado (${timeStr})**\n` +
-                        `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                        `🏭 **Performance**\n` +
-                        `• OEE: 82% (Meta: 85%) ⚠️\n` +
-                        `• Produção: 1.250 un 🟢\n` +
-                        `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                        `🔧 **Diagnóstico**\n` +
-                        `• CNC-01: Vibração em 4.5mm/s (Alerta)\n` +
-                        `• Caldeira: Estável em 65°C\n` +
-                        `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                        `💡 **Ação Recomendada**: Agendar lubrificação da CNC-01 no próximo intervalo.`;
-                } else {
-                    // Simple Report
-                    response = `📄 **Relatório Rápido (${timeStr})**\n` +
-                        `• 🔥 **Temp. Média**: 68°C\n` +
-                        `• 〰️ **Vibração Média**: 2.3 mm/s\n` +
-                        `• 🛑 **Paradas**: 2 microparadas\n` +
-                        `• ✅ **Conculsão**: Operação Estável`;
-                }
-            }
-
-            // --- SPECIFIC INFO (Equipments, Config, Stops) ---
-            else if (lowerText.includes('equipamento') || lowerText.includes('maquina')) {
-                response = "🏭 **Ativos Monitorados**:\n1. **CNC-01** (⚠️ Vibração Alta)\n2. **Prensa Hidráulica** (✅ Normal)\n3. **Esteira de Montagem** (✅ Normal)\n\nPosso detalhar o status de qualquer uma delas.";
-            }
-            else if (lowerText.includes('configura') || lowerText.includes('ajuste')) {
-                response = "⚙️ **Ajustes de Sistema**: Vá até o ícone de engrenagem (↗️) para definir:\n• Limites de Alerta (Temp/Vib)\n• Metas de OEE\n• Turnos de Operação";
-            }
-            else if (lowerText.includes('parada') || lowerText.includes('downtime') || lowerText.includes('falha')) {
-                // Date handling simulation
-                if (lowerText.match(/\d{2}\/\d{2}/)) {
-                    response = `🗓️ **Registro de 02/02**:\n• 14:30 | Falha Elétrica (10min)\n• 09:15 | Ajuste Mecânico (5min)\n\nTotal de Downtime: 15 minutos.`;
-                } else if (lowerText.includes('22')) { // Range simulation
-                    response = `📅 **Histórico (22h - 00h)**\n• Nenhuma falha crítica registrada.\n• Variação de temperatura normal (+/- 2°C).\n• Operação contínua sem paradas.`;
-                } else {
-                    response = `⚠️ **Últimas Paradas**:\n• 14:30 - Falha de Alimentação (10min)\n• 09:15 - Ajuste de Ferramenta (5min)\n\nO MTTR global está em 45min (Bom).`;
-                }
-            }
-
-            // --- PREDICTIONS & ALERTS ---
-            else if (lowerText.includes('previsão') || lowerText.includes('risco')) {
-                if (detectedTime) {
-                    response = `🔮 **Previsão às ${detectedTime}**\n• Probabilidade de Falha: Baixa (<3%)\n• Tendência: Estabilidade térmica.\n• Recomendação: Manter operação normal.`;
-                } else {
-                    response = `🔮 **Análise Preditiva (2h)**\n• ⚠️ **Risco**: MODERADO\n• 〰️ **Fator**: Vibração na CNC-01\n• 📉 **Confiança**: 89%\n\nSugerimos inspeção visual no próximo turno.`;
-                }
-            }
-
-            // Default Metrics
-            else if (lowerText.includes('vibração')) {
-                response = `📊 **Vibração Atual**: 4.5 mm/s (Alerta na CNC-01). Nas demais máquinas, a média é 1.2 mm/s (Normal).`;
-            }
-            else if (lowerText.includes('temperatura')) {
-                response = `🌡️ **Temperatura Atual**: 65°C (Média Global). Todos os sensores operando dentro da faixa de segurança (40°C - 90°C).`;
-            }
-
-            // Humanized Fallback
-            else {
-                response = "🤔 Entendi parcialmente. Para que eu seja mais preciso, tente:\n\n• 'Status das 14:00'\n• 'Relatório de ontem'\n• 'O que é MTTR?'\n• 'Houve falha na CNC-01?'\n\nEstou aprendendo constantemente com a operação!";
-            }
-
-            setMessages(prev => [...prev, { type: 'ai', text: response }]);
-        }, 1500);
+        }
     };
 
     return (
@@ -184,11 +117,7 @@ export const ChatAssistant = () => {
                             ? 'bg-white/20 text-white rounded-tr-none border border-white/10'
                             : 'bg-primary/20 text-white rounded-tl-none border border-primary/20'
                             }`}>
-                            {msg.text.includes('ALTO') ? (
-                                <span>Risco <span className="text-danger font-bold">ALTO</span> devido à vibração na Linha 3.</span>
-                            ) : (
-                                msg.text
-                            )}
+                            {msg.type === 'ai' ? formatMessage(msg.text) : msg.text}
                         </div>
 
                         {msg.type === 'user' && (

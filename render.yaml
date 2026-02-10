@@ -1,12 +1,11 @@
 services:
-  # Backend API (NestJS)
+  # Backend API (NestJS + Python Support)
   - type: web
     name: smart-factory-api
-    env: node
+    env: docker
     region: oregon
     plan: free
-    buildCommand: cd platform && npm install && npm run build
-    startCommand: cd platform && npm run start:prod
+    dockerFilePath: Dockerfile.api
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
@@ -14,7 +13,7 @@ services:
       - key: PORT
         value: 3000
       - key: DATABASE_PATH
-        value: /opt/render/project/src/smart_factory.db
+        value: /app/smart_factory.db
 
   # Python Simulation + Alerts
   - type: worker

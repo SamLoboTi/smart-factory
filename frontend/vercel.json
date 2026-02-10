@@ -4,7 +4,7 @@
     "framework": "vite",
     "installCommand": "npm install",
     "env": {
-        "VITE_API_URL": "https://smart-factory-api.onrender.com"
+        "VITE_API_URL": "https://smart-factory-api-kox6.onrender.com"
     },
     "rewrites": [
         {

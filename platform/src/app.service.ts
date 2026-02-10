@@ -23,29 +23,66 @@ export class AppService {
   }
 
   // 2. /kpis: Cálculos agregados
-  async getKPIs() {
-    const totalReadings = await this.sensorRepo.count();
-    const downtimeReadings = await this.sensorRepo.count({
-      where: { status: 'parado' },
-    });
+  async getKPIs(startDate?: string, endDate?: string) {
+    const queryBuilder = this.sensorRepo.createQueryBuilder('sensor');
+
+    if (startDate) {
+      queryBuilder.andWhere('sensor.timestamp >= :startDate', { startDate });
+    }
+    if (endDate) {
+      queryBuilder.andWhere('sensor.timestamp <= :endDate', { endDate });
+    }
+
+    const totalReadings = await queryBuilder.getCount();
+
+    const downtimeReadings = await queryBuilder
+      .clone()
+      .andWhere("sensor.status = 'parado'")
+      .getCount();
+
     const operationalReadings = totalReadings - downtimeReadings;
 
     const disponibilidade = totalReadings > 0
       ? (operationalReadings / totalReadings) * 100
       : 0;
 
-    const { avg: vibracaoMedia } = await this.sensorRepo
-      .createQueryBuilder('sensor')
+    const { avg: vibracaoMedia } = await queryBuilder
+      .clone()
       .select('AVG(sensor.vibracao)', 'avg')
-      .where("status = 'rodando'")
+      .andWhere("sensor.status = 'rodando'")
       .getRawOne();
 
+    const avgVib = parseFloat(vibracaoMedia?.toFixed(2) || '0');
+
+    // --- OEE CALCULATION ---
+    // Availability
+    const availability = totalReadings > 0 ? (operationalReadings / totalReadings) : 0;
+
+    // Performance (Simulated: vib < 2 is 100%, vib > 10 is 0%)
+    const performance = Math.max(0, 1 - (avgVib / 10));
+
+    // Quality (Simulated: vib < 5 is 98%, else 85%)
+    const quality = avgVib < 5 ? 0.98 : 0.85;
+
+    const oee = availability * performance * quality;
+
+    // --- MTBF & MTTR ESTIMATION ---
+    // Approximating "failures" as downtimeReadings / 3 (assuming avg stop duration = 3 ticks)
+    // In a real scenario, we would count distinct 'stop' events.
+    const estimatedFailures = Math.max(1, Math.ceil(downtimeReadings / 3));
+
+    const mtbf = estimatedFailures > 0 ? (operationalReadings / estimatedFailures) : operationalReadings;
+    const mttr = estimatedFailures > 0 ? (downtimeReadings / estimatedFailures) : 0;
+
     return {
-      disponibilidade: parseFloat(disponibilidade.toFixed(2)),
+      oee: Math.round(oee * 100), // Percent
+      mtbf: parseFloat(mtbf.toFixed(1)), // Ticks/Minutes
+      mttr: parseFloat(mttr.toFixed(1)), // Ticks/Minutes
+      disponibilidade: parseFloat((availability * 100).toFixed(2)),
       leituras_totais: totalReadings,
       tempo_parado_registros: downtimeReadings,
-      vibracao_media_operacao: parseFloat(vibracaoMedia?.toFixed(2) || '0'),
-      status_geral: disponibilidade > 85 ? 'Excelente' : disponibilidade > 60 ? 'Alerta' : 'Crítico'
+      vibracao_media_operacao: avgVib,
+      status_geral: oee > 0.85 ? 'Excelente' : oee > 0.60 ? 'Alerta' : 'Crítico'
     };
   }
 

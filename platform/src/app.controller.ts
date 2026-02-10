@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -11,8 +11,11 @@ export class AppController {
   }
 
   @Get('kpis')
-  async getKPIs() {
-    return this.appService.getKPIs();
+  async getKPIs(
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+  ) {
+    return this.appService.getKPIs(start, end);
   }
 
   @Get('alertas')

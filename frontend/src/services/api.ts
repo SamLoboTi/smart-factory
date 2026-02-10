@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000'; // Ajuste conforme porta do NestJS
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface SensorReading {
     id: number;
@@ -11,6 +11,9 @@ export interface SensorReading {
 }
 
 export interface KPIResponse {
+    oee: number;
+    mtbf: number;
+    mttr: number;
     disponibilidade: number;
     leituras_totais: number;
     tempo_parado_registros: number;
@@ -30,9 +33,10 @@ export const api = {
         }
     },
 
-    getKPIs: async (): Promise<KPIResponse | null> => {
+    getKPIs: async (params?: { start?: string; end?: string }): Promise<KPIResponse | null> => {
         try {
-            const res = await fetch(`${API_URL}/kpis`);
+            const query = new URLSearchParams(params as any).toString();
+            const res = await fetch(`${API_URL}/kpis?${query}`);
             if (!res.ok) throw new Error('Falha ao buscar KPIs');
             return await res.json();
         } catch (error) {

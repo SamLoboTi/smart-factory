@@ -32,6 +32,53 @@ class KpiCalculator:
         oee = availability * performance * quality
         return round(oee * 100, 2), round(availability * 100, 2), round(performance * 100, 2), round(quality * 100, 2)
 
+    def calculate_mtbf(self, device_id):
+        """
+        Mean Time Between Failures = (Total Uptime) / (Number of Breakdowns)
+        """
+        df = self.db.get_recent_readings(device_id, limit=1000) # Need more history
+        if df.empty: return 0
+        
+        # Simple estimation: Count transitions from running to stopped
+        # limiting to what we have in the window
+        failures = 0
+        uptime_minutes = 0
+        
+        # Sort by time
+        df = df.sort_values('timestamp')
+        
+        # Calculate uptime (approximate based on rows * interval or actual timestamps)
+        # Assuming 1 row = 1 unit of time if simulated, or diff timestamps
+        uptime_minutes = len(df[df['status'] == 'running']) # driven by simulation tick ~ 1s/1min?
+        
+        # Detect state changes 'running' -> 'parado'
+        df['prev_status'] = df['status'].shift(1)
+        failures = len(df[(df['status'] == 'parado') & (df['prev_status'] == 'running')])
+        
+        if failures == 0:
+            return uptime_minutes # Theoretical infinity, return total time
+            
+        return round(uptime_minutes / failures, 1)
+
+    def calculate_mttr(self, device_id):
+        """
+        Mean Time To Repair = (Total Downtime) / (Number of Repairs)
+        """
+        df = self.db.get_recent_readings(device_id, limit=1000)
+        if df.empty: return 0
+        
+        downtime_minutes = len(df[df['status'] == 'parado'])
+        
+        # Repairs = transitions from parado -> running
+        df = df.sort_values('timestamp')
+        df['prev_status'] = df['status'].shift(1)
+        repairs = len(df[(df['status'] == 'running') & (df['prev_status'] == 'parado')])
+        
+        if repairs == 0:
+            return 0 
+            
+        return round(downtime_minutes / repairs, 1)
+
 class FailurePredictor:
     def __init__(self, model_path="modelo_falha.pkl"):
         self.model = None

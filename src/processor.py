@@ -48,6 +48,8 @@ class DataProcessor:
         # 5. Calcular OEE (Apenas para logar ocasionalmente)
         if  random.randint(0, 100) < 5: # 5% de chance de logar OEE no console para não spamar
              oee, _, _, _ = self.kpi.calculate_oee(packet['device_id'])
-             self.logger.info(f"OEE atualizado para {packet['device_id']}: {oee}%")
+             mtbf = self.kpi.calculate_mtbf(packet['device_id'])
+             mttr = self.kpi.calculate_mttr(packet['device_id'])
+             self.logger.info(f"KPIs {packet['device_id']}: OEE={oee}% | MTBF={mtbf}m | MTTR={mttr}m")
 
 import random # re-import for the random check

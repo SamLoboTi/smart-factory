@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. CORE SIMULATION (Python)
+  python-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-factory-core
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    environment:
+      - DATABASE_PATH=/app/data/smart_factory.db
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    tty: true
+
+  # 2. BACKEND API (NestJS + Python Bridge)
+  backend:
+    build:
+      context: .
+      dockerfile: platform/Dockerfile
+    container_name: smart-factory-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src # Mount src so changes in python logic reflect immediately
+      - ./platform:/app/platform # Mount for dev (strictly speaking requires dev start command)
+      - /app/platform/node_modules
+    environment:
+      - DATABASE_PATH=/app/data/smart_factory.db
+    depends_on:
+      - python-core
+
+  # 3. FRONTEND (Vite React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart-factory-ui
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src # Hot Reload
+      - ./frontend/public:/app/public
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+
+volumes:
+  data:

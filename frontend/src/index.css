@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-smart-bg: #0f172a;
+  --color-smart-card: #1e293b;
+  --color-smart-accent: #3b82f6;
+  --color-smart-success: #10b981;
+  --color-smart-warning: #f59e0b;
+  --color-smart-danger: #ef4444;
+  --color-background: #0a0e17;
+  --color-surface: #111827;
+  --color-primary: #3b82f6;
+  --color-secondary: #10b981;
+  --color-accent: #f59e0b;
+  --color-danger: #ef4444;
+  --color-muted: #94a3b8;
+
+  --font-sans: 'Inter', sans-serif;
+
+  --shadow-glow: 0 0 15px rgba(59, 130, 246, 0.5);
+  --shadow-glow-success: 0 0 15px rgba(16, 185, 129, 0.5);
+  --shadow-glow-danger: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    /* Use the real background image with a dark overlay for readability */
+    background-image:
+      linear-gradient(to bottom, rgba(10, 14, 23, 0.92), rgba(10, 14, 23, 0.85)),
+      url('/bg-factory.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background-color: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-radius: 0.75rem;
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

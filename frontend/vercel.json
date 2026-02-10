@@ -1,0 +1,15 @@
+{
+    "buildCommand": "npm install && npm run build",
+    "outputDirectory": "dist",
+    "framework": "vite",
+    "installCommand": "npm install",
+    "env": {
+        "VITE_API_URL": "https://smart-factory-api.onrender.com"
+    },
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+pandas
+numpy
+logging
+scikit-learn
+joblib
+twilio
+matplotlib
+pillow

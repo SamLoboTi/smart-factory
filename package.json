@@ -1,0 +1,7 @@
+{
+    "name": "smart-factory-root",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "cd platform && npm run start"
+    }
+}

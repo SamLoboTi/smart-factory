@@ -1,0 +1,44 @@
+services:
+  # Backend API (NestJS)
+  - type: web
+    name: smart-factory-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd platform && npm install && npm run build
+    startCommand: cd platform && npm run start:prod
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/smart_factory.db
+
+  # Python Simulation + Alerts
+  - type: worker
+    name: smart-factory-simulation
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run_simulation.py
+    envVars:
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/smart_factory.db
+      - key: PRE_ALERT_THRESHOLD
+        value: 0.60
+      - key: CRITICAL_THRESHOLD
+        value: 0.80
+      - key: ALERT_COOLDOWN_MINUTES
+        value: 15
+      # Twilio credentials (configure in Render dashboard)
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+      - key: RECIPIENT_WHATSAPP
+        sync: false

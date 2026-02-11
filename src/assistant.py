@@ -30,442 +30,297 @@ class SmartAssistant:
         - "oee <device_id>"
         - "predict <device_id>" (Requires Admin)
         """
-        query = query.lower().strip()
+        original_query = query
+        query = self._normalize_text(query)
         parts = query.split()
         
         if not parts:
-            return "Olá! Como posso ajudar?"
+            return "Olá! Sou seu assistente inteligente. Monitorando a planta em tempo real. Como posso ajudar você hoje?"
 
         # --- AUTHENTICATION ---
         if parts[0] == "login":
             if len(parts) < 3:
                 return "Use: login <usuario> <senha>"
+            # Use original parts for case-sensitive password if needed, but simplistic here
             user = self.auth.login(parts[1], parts[2])
             if user:
                 self.current_user = user
                 return f"Login bem-sucedido! Bem-vindo, {user['username']} ({user['role']})."
             else:
-                return "Falha no login. Verifique credenciais."
+                return "Falha no login. Verifique suas credenciais."
 
         if parts[0] == "logout":
             self.current_user = None
-            return "Desconectado."
+            return "Desconectado com sucesso."
 
-        if parts[0] == "whoami":
+        if parts[0] == "whoami" or parts[0] == "quem":
             if self.current_user:
-                 return f"Usuário: {self.current_user['username']}, Role: {self.current_user['role']}"
-            return "Não autenticado."
+                 return f"Usuário logado: {self.current_user['username']} ({self.current_user['role']})"
+            return "Você não está autenticado no momento."
 
-        # --- PUBLIC COMMANDS ---
-        # Regex for date extraction: YYYY-MM-DD or YYYY-MM-DD HH:MM
-        import re
-        from datetime import datetime
+        # --- PUBLIC & CONTEXTUAL COMMANDS ---
         
-        date_pattern = r"(\d{4}-\d{2}-\d{2})(?:\s(\d{2}:\d{2}))?"
-        date_match = re.search(date_pattern, query)
-        
-        report_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        footer = f"\n\n🕒 Relatório gerado em: {report_time}"
+        report_time = datetime.now().strftime("%d/%m/%Y – %H:%M")
+        footer = "" # Removing footer to keep it clean as per user request style
 
+        # 1. Status Check
         if "status" in query:
-            device_id = parts[1] if len(parts) > 1 and not parts[1].startswith("em") else parts[-1]
-            # Simple heuristic: if 'status' and 'em' <date>, it is historical
+            device_id = self._extract_device_id(query, parts)
+            if not device_id:
+                # If no ID found, maybe ask? Or listing?
+                # For now, default or ask.
+                return "Por favor, especifique o ID do dispositivo para verificar o status (ex: status DEV-100)."
+
+            # Check for history date
+            date_match = self._extract_date(original_query) # Use original for case/format preservation if needed
             
-            readings = pd.DataFrame()
-            is_historical = False
-            
-            if date_match and "em" in query:
-                target_date = date_match.group(0)
+            if date_match:
+                target_date = date_match
                 readings = self.db.get_readings_at(device_id, target_date)
                 is_historical = True
+                prefix = f"📜 [HISTÓRICO {target_date}]"
                 if readings.empty:
-                    return f"⚠️ Não existem registros para {device_id} em {target_date}. Verifique a data (muito antiga ou futura?).{footer}"
+                    return f"⚠️ Não encontrei registros para {device_id} em {target_date}. Verifique se a data está correta."
             else:
                 readings = self.db.get_recent_readings(device_id, limit=1)
+                is_historical = False
+                prefix = "🟢 [AGORA]"
 
             info = self.db.get_device_info(device_id)
+            if not info:
+                 return f"Dispositivo {device_id} não encontrado no sistema."
             
-            if not info or readings.empty:
-               return f"Não encontrei o dispositivo {device_id} ou dados recentes.{footer}"
-               
+            if readings.empty:
+                return f"Sem dados recentes para {device_id}."
+
+            # Construct status string
             current_status = readings.iloc[0]['status']
             temp = readings.iloc[0]['temperature']
-            ts = readings.iloc[0]['timestamp']
-            
-            prefix = f"📜 [HISTÓRICO {ts}]" if is_historical else "🟢 [AGORA]"
-            return f"{prefix} {info['name']} ({device_id}): {current_status}. Temp: {temp:.1f}C.{footer}"
+            return f"{prefix} {info['name']} ({device_id}): {current_status}. Temperatura: {temp:.1f}°C."
 
-        # --- RESTRICTED COMMANDS (Example) ---
-        # Let's say OEE is for logged in users only
+        # 2. OEE Check
         if "oee" in query:
             if not self.current_user:
-                return f"🔒 Acesso Negado. Faça login para ver KPIs.{footer}"
-                
-            device_id = parts[-1]
+                return "🔒 Para visualizar KPIs como OEE, por favor faça login."
+            
+            device_id = self._extract_device_id(query, parts)
+            if not device_id: return "Qual dispositivo? (ex: oee DEV-100)"
+            
             oee, avail, perf, qual = self.kpi.calculate_oee(device_id)
-            return f"📊 OEE {device_id}: {oee}%. (A: {avail}%, P: {perf}%, Q: {qual}%){footer}"
+            return f"📊 OEE {device_id}: {oee}%. (Disponibilidade: {avail}%, Performance: {perf}%, Qualidade: {qual}%)"
 
-        # --- ADMIN / AI PREDICTION ---
-        if "predict" in query or "prever" in query:
-            # Check permissions (assuming only admin sees predictions for safety/demo)
+        # 3. Prediction
+        if "predict" in query or "prever" in query or "predicao" in query:
             if not self.auth.check_permission(self.current_user, 'admin'):
-                return f"🔒 Acesso Negado. Apenas Admins podem acessar previsões de falha.{footer}"
+                return "🔒 Acesso restrito. Apenas administradores podem gerar previsões de falha."
 
-            device_id = parts[-1] 
-            # Check if this input is just 'predict' without ID
-            if not device_id.startswith("DEV"):
-                 return f"Por favor especifique o ID do dispositivo (ex: DEV-100).{footer}"
+            device_id = self._extract_device_id(query, parts)
+            if not device_id: return "Informe o ID para previsão (ex: predict DEV-100)."
 
             readings = self.db.get_recent_readings(device_id, limit=5)
-            if readings.empty:
-                return f"Dados insuficientes para predição.{footer}"
-            
+            if readings.empty: return "Dados insuficientes para gerar previsão."
+
             risk, rul, waste = self.predictor.predict_failure_risk(readings)
             risk_pct = risk * 100
             
-            status_moji = "🟢" if risk < 0.3 else ("🟡" if risk < 0.7 else "🔴")
-            
+            status_icon = "🟢" if risk < 0.3 else ("🟡" if risk < 0.7 else "🔴")
             rul_text = f"{rul:.1f}h" if rul < 900 else "Estável (>48h)"
             
-            response = f"""
-{status_moji} **Análise de Risco para {device_id}**:
-- 📉 Probabilidade de Falha: {risk_pct:.1f}%
-- ⏳ Vida Útil Restante (RUL): {rul_text}
-- ⚡ Desperdício de Energia: {waste:.1f}W
-            """
-            return response + footer
+            return f"{status_icon} Análise de Risco ({device_id}):\n📉 Probabilidade de Falha: {risk_pct:.1f}%\n⏳ Vida Útil Restante: {rul_text}\n⚡ Desperdício de Energia: {waste:.1f}W"
 
-        # --- CONVERSATIONAL REPORT FLOW ---
-        
-        # 0. Check Context: Waiting for Confirmation?
-        if self.context.get('awaiting_confirmation'):
-            if 'sim' in query or 's' == query or 'yes' in query:
-                target_id = self.context.get('report_device_id', 'DEV-100')
-                target_time = self.context.get('report_target_time')
-                is_current = self.context.get('report_is_current')
-                
-                if is_current:
-                    # Fetch recent data for trends
-                    df = self.db.get_recent_readings(target_id, limit=20)
-                else:
-                    # Fetch historical window
-                    df = self.db.get_readings_window(target_id, target_time, window_minutes=60)
-                
-                self.context = {} # Clear context
-                
-                if df.empty:
-                     return f"⚠️ Sem dados encontrados para {target_id} por volta de {target_time}."
-                     
-                return self._generate_report_string(df, target_time, target_id)
-            else:
-                self.context = {}
-                return "❌ Operação cancelada. O que deseja fazer agora?"
-
-        # 0.1 Check Context: Waiting for Date?
-        if self.context.get('awaiting_report_date'):
-            # User sent something, hopefully a date like dd-mm-yyyy or dd/mm/yyyy
-            # Support both - and /
-            date_time_pattern = r"(\d{2}[-/]\d{2}[-/]\d{4})\D+(\d{2}:\d{2})"
-            match = re.search(date_time_pattern, query)
+        # 4. Reports (Relatório)
+        if "relatorio" in query:
+            # 4a. Quick Report (Rápido/Atual/Agora)
+            if "rapido" in query or "atual" in query or "agora" in query:
+                device_id = self._extract_device_id(query, parts) or "DEV-100"
+                return self._generate_quick_report(query, device_id)
             
-            # Since we are in a flow, we need the device_id. Ideally previously stored.
-            # For simplicity, if not stored, we might default to DEV-100 or ask again.
-            # But let's check if the query *also* has an ID.
-            
-            target_id = self.context.get('report_device_id', 'DEV-100') # Default fallback
-            
-            # Update ID if present in this new message
-            for p in parts:
-                if p.upper().startswith("DEV-"):
-                    target_id = p.upper()
-                    self.context['report_device_id'] = target_id
-            
-            if not match:
-                 return f"⚠️ Formato incorreto. Por favor, informe a data e hora: dd/mm/aaaa hh:mm"
-
-            date_str = match.group(1)
-            time_str = match.group(2)
-            
-            # Normalize date separator to /
-            date_str = date_str.replace('-', '/')
-            
-            full_target_str = f"{date_str} {time_str}"
-            
-            # Fetch
-            df = self.db.get_readings_window(target_id, full_target_str, window_minutes=60)
-            self.context = {} # Reset context logic
-            
-            if df.empty:
-                return f"Essa data ({full_target_str}) não consta relatórios no banco de dados para {target_id}."
-                
-            return self._generate_report_string(df, full_target_str, target_id)
-
-
-        # 1. Trigger: Broad "Relatorio"
-        if "relatorio" in query or "report" in query:
-             # Capture ID if strictly present now, or save for later
-             target_id = "DEV-100" # Default or from context
-             for p in parts:
-                if p.upper().startswith("DEV-"):
-                    target_id = p.upper()
-             
-             # Shortcut 1: "Relatorio Rapido" or "Atual"
-             if "rapido" in query or "atual" in query or "agora" in query:
-                 return self._generate_quick_report(query, target_id)
-
-             # Shortcut 2: Did user provide a date?
-             date_pattern = r"(\d{2}[-/]\d{2}[-/]\d{4})"
-             date_match = re.search(date_pattern, query)
-             
-             if date_match:
-                 # Found a date, check for time
-                 time_pattern = r"(\d{2}:\d{2})"
-                 time_match = re.search(time_pattern, query)
+            # 4b. Complete/Historical Report
+            if "completo" in query or "historico" in query or "detalhado" in query:
+                 # Check for date in query
+                 date_match = self._extract_date(original_query)
+                 device_id = self._extract_device_id(query, parts) or "DEV-100"
                  
-                 date_str = date_match.group(1).replace('-', '/')
-                 
-                 if time_match:
-                     # Full Date+Time -> Go to Confirmation
-                     time_str = time_match.group(1)
-                     full_str = f"{date_str} {time_str}"
-                     self.context['report_target_time'] = full_str
-                     self.context['report_device_id'] = target_id
-                     self.context['report_is_current'] = False
-                     self.context['awaiting_confirmation'] = True
-                     return f"Entendido. Gerar relatório passado de {target_id} para **{full_str}**? (Sim/Não)"
+                 if date_match:
+                     # Generate immediately
+                     return self._generate_historical_report(device_id, date_match)
                  else:
-                     # Only Date -> Ask for Time
-                     self.context['report_temp_date'] = date_str
-                     self.context['report_device_id'] = target_id
-                     self.context['awaiting_report_time_only'] = True
-                     return f"Entendi que você quer um relatório de {date_str}. Qual o horário? (hh:mm)"
+                     # Ask for date
+                     self.context['report_type'] = 'complete'
+                     self.context['report_device_id'] = device_id
+                     self.context['awaiting_date'] = True
+                     return f"Para o relatório completo de {device_id}, por favor informe a data e hora (dd/mm/aaaa hh:mm)."
 
-             # No date, show menu or ask for date directly if intent is clear
-             # User asked: "Exemplo Preciso de um relatorio ? sistema: Perfeito! digite a data :dd-mm-aaaa e horario xx:xx"
-             self.context['report_device_id'] = target_id
-             self.context['awaiting_report_date'] = True
-             return "Perfeito! digite a data :dd-mm-aaaa e horario xx:xx"
+            # 4c. General/Unspecified
+            return "Você gostaria de um relatório **Rápido** (situação atual) ou **Completo** (histórico)? Digite 'relatório rápido' ou 'relatório completo'."
 
-        # 1.5 Handle Time Only (Intermediate step for Shortcut)
-        if self.context.get('awaiting_report_time_only'):
-             time_pattern = r"(\d{2}:\d{2})"
-             match = re.search(time_pattern, query)
-             if match:
-                 date_str = self.context.get('report_temp_date')
-                 time_str = match.group(1)
-                 full_str = f"{date_str} {time_str}"
-                 
-                 self.context['awaiting_report_time_only'] = False
-                 self.context['report_target_time'] = full_str
-                 self.context['report_is_current'] = False
-                 self.context['awaiting_confirmation'] = True
-                 return f"Certo. Gerar relatório para **{full_str}**? (Sim/Não)"
-             else:
-                 return "Hora inválida. Por favor digite no formato hh:mm (ex: 14:30)."
-
-        # 2. Handle Choice (1 or 2)
-        if self.context.get('awaiting_report_choice'):
-            # Strict checks
-            is_opt1 = query == "1" or "atual" in query or "rapido" in query
-            is_opt2 = query == "2" or "passado" in query or "historico" in query
+        # 5. Explain
+        if "explain" in query or "explicar" in query or "explica" in query:
+            device_id = self._extract_device_id(query, parts)
+            if not device_id: return "Qual dispositivo você quer que eu analise? (ex: explicar DEV-100)"
             
-            if is_opt1:
-                # Current Report
-                target_id = self.context.get('report_device_id', 'DEV-100')
-                self.context = {} # Reset specific wait states but set confirmation
-                
-                now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
-                self.context['report_target_time'] = now_str
-                self.context['report_is_current'] = True
-                self.context['awaiting_confirmation'] = True
-                
-                return f"Gerar relatório do **TURNO ATUAL** ({now_str})? (Sim/Não)"
+            readings = self.db.get_recent_readings(device_id, limit=1)
+            if readings.empty: return f"Sem dados para explicar a situação de {device_id}."
             
-            elif is_opt2:
-                self.context['awaiting_report_choice'] = False
-                self.context['awaiting_report_date'] = True
-                return "Me informe a data e a hora que gostaria desse relatório (dd/mm/aaaa hh:mm)."
+            last = readings.iloc[0]
+            reasons = []
+            if last['temperature'] > 80: reasons.append(f"Temperatura alta ({last['temperature']}°C)")
+            if last['vibration'] > 4: reasons.append(f"Vibração excessiva ({last['vibration']}mm/s)")
             
-            # If neither matched strictly (e.g. user typed a date here by mistake? catch it in next turn or warn)
-            return "Opção inválida. Digite 1 para Atual ou 2 para Passado."
+            explanation = "Operação normal." if not reasons else "Fatores de risco: " + "; ".join(reasons) + "."
+            return f"🧐 Análise ({device_id}): {explanation}"
 
- 
+        # --- CONTEXT HANDLING (Follow-up) ---
+        if self.context.get('awaiting_date'):
+            # Try to parse date from this new query
+            date_match = self._extract_date(original_query)
+            if date_match and len(date_match) > 10: # Basic check for full datetime
+                 target_id = self.context.get('report_device_id', 'DEV-100')
+                 self.context = {} # Clear
+                 return self._generate_historical_report(target_id, date_match)
+            else:
+                 return "Formato de data inválido. Por favor use: dd/mm/aaaa hh:mm"
 
-        # --- EXPLAIN COMMAND (New) ---
-        if "explain" in query or "explica" in query:
-             device_id = None
-             for p in parts:
-                if p.upper().startswith("DEV-"):
-                    device_id = p.upper()
-                    break
-             
-             if not device_id: return f"Qual dispositivo você quer que eu explique? (Ex: explain DEV-100)"
-             
-             info = self.db.get_device_info(device_id)
-             readings = self.db.get_recent_readings(device_id, limit=1)
-             
-             if readings.empty: return f"Sem dados para explicar {device_id}."
-             
-             last = readings.iloc[0]
-             reasons = []
-             if last['temperature'] > 80: reasons.append(f"Temperatura alta ({last['temperature']}°C)")
-             if last['vibration'] > 4: reasons.append(f"Vibração excessiva ({last['vibration']}mm/s)")
-             if last['status'] == 'parado': reasons.append("Status reportado como PARADO")
-             
-             if not reasons:
-                 explanation = "O dispositivo está operando dentro dos parâmetros normais. Nenhuma anomalia detectada."
-             else:
-                 explanation = "Fatores de risco identificados:\n- " + "\n- ".join(reasons)
-             
-             return f"🧐 **Análise Profunda ({device_id})**:\n{explanation}{footer}"
+        # --- FALLBACK ---
+        return (
+            "Desculpe, não entendi. Tente comandos como:\n"
+            "- 'Status DEV-100'\n"
+            "- 'Relatório rápido'\n"
+            "- 'Relatório completo'\n"
+            "- 'OEE DEV-100' (requer login)"
+        )
 
-        # --- FUZZY MATCHING FALLBACK ---
-        # If we got here, no exact command matched.
-        known_commands = ['status', 'oee', 'predict', 'relatorio', 'login', 'logout', 'explain']
-        # Check first word usually
-        potential_cmd = parts[0]
-        matches = difflib.get_close_matches(potential_cmd, known_commands, n=1, cutoff=0.6)
-        
-        if matches:
-            suggestion = matches[0]
-            return f"🤔 Você quis dizer '{suggestion}'? Tente digitar novamente corretamente.{footer}"
+    def _normalize_text(self, text):
+        import unicodedata
+        text = text.lower().strip()
+        # Remove accents
+        text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+        return text
 
-        return f"Comandos: login, logout, 'preciso de relatorio', status [id], predict [id], explain [id]{footer}"
+    def _extract_device_id(self, query, parts):
+        # 1. Look for explicit DEV-XXX
+        for p in parts:
+            if p.upper().startswith("DEV-"):
+                return p.upper()
+        # 2. Heuristic: maybe just a number? (riskier)
+        return None
 
-    def _generate_report_string(self, df, time_str, device_id):
+    def _extract_date(self, text):
+        import re
+        # Try full datetime first
+        match = re.search(r"(\d{2}[-/]\d{2}[-/]\d{4})\s+(\d{2}:\d{2})", text)
+        if match:
+            return f"{match.group(1).replace('-', '/')} {match.group(2)}"
+        # Try just date
+        match = re.search(r"(\d{2}[-/]\d{2}[-/]\d{4})", text)
+        if match:
+             return match.group(1).replace('-', '/')
+        return None
+
+    def _generate_report_string(self, df, time_str, device_id, header_override=None):
         # 1. AI Analysis
         risk, rul, waste = self.predictor.predict_failure_risk(df)
-        risk_pct = risk * 100
         
-        # 2. Extract Key Metrics (Last reading in the window)
+        # 2. Extract Key Metrics (Last reading)
         last_reading = df.iloc[-1]
-        current_temp = last_reading['temperature']
-        current_vib = last_reading['vibration']
         
-        # 3. Determine Status & Recommendation
-        # Logic: Risk < 30% (Normal), 30-70% (Preventivo), > 70% (Crítico)
-        if risk_pct < 30:
-            status = "Normal (Operação Estável)"
-            rec_action = "Manter monitoramento padrão."
-            analysis_text = "Parâmetros operacionais dentro da normalidade."
-        elif risk_pct < 70:
-            status = "Preventivo (antes do modo crítico)"
-            rec_action = "Inspeção preventiva e monitoramento reforçado."
-            analysis_text = "Tendência de aumento de risco detectada pela IA."
-        else:
-            status = "CRÍTICO (Risco de Falha Iminente)"
-            rec_action = "PARADA IMEDIATA para manutenção."
-            analysis_text = "Deterioração acelerada e alta probabilidade de falha."
-
-        # 4. Determine Primary Sensor Context
-        # Default limits
-        limit_temp = 85.0
-        limit_vib = 4.5
+        # 3. Determine Status & Context
+        status_data = self._analyze_status(risk, last_reading['temperature'], last_reading['vibration'])
         
-        # Heuristic: Which is closer to or exceeding limit?
-        temp_ratio = current_temp / limit_temp
-        vib_ratio = current_vib / limit_vib
+        # 4. Prepare Data
+        report_data = {
+            'status': status_data['status'],
+            'timestamp': time_str,
+            'device_name': device_id,
+            'sensor': status_data['sensor'],
+            'value': status_data['value'],
+            'limit': status_data['limit'],
+            'unit': status_data['unit'],
+            'risk_score': risk,
+            'analysis': status_data['analysis'],
+            'recommendation': status_data['recommendation'],
+            'header': header_override
+        }
         
-        if vib_ratio > temp_ratio:
-            sensor = "Vibração"
-            val_atual = f"{current_vib:.2f} mm/s"
-            limite = f"{limit_vib:.1f} mm/s"
-            specific_analysis = f"Vibração elevada detectada ({val_atual})."
-            specific_rec = "Verificar alinhamento, fixação e lubrificação de rolamentos."
-        else:
-            sensor = "Temperatura"
-            val_atual = f"{current_temp:.1f} °C"
-            limite = f"{limit_temp:.1f} °C"
-            specific_analysis = f"Aquecimento identificado ({val_atual})."
-            specific_rec = "Verificar sistema de resfriamento e ventilação do motor."
+        from src.report_formatter import ReportFormatter
+        return ReportFormatter.format_report(report_data)
 
-        # Combine Analysis/Rec
-        final_analysis = f"{analysis_text} {specific_analysis}"
-        final_rec = f"{rec_action} {specific_rec}"
-
-        # 5. Format Output
-        return f"""
-⚠️ PRÉ-ALERTA – SMART FACTORY
-
-Status: {status}
-Data/Hora: {time_str}
-Equipamento: {device_id}
-Sensor: {sensor}
-Valor Atual: {val_atual}
-Limite Operacional: {limite}
-Risco Estimado (IA): {risk_pct:.1f}%
-
-Análise:
-{final_analysis}
-
-Recomendação:
-{final_rec}
-"""
-
-    def _generate_quick_report(self, query, device_id="DEV-100"):
-        # Get recent reading
+    def _generate_quick_report(self, query, device_id):
         readings = self.db.get_recent_readings(device_id, limit=5)
-        if readings.empty:
-            return f"Sem dados recentes para {device_id}."
-            
-        last = readings.iloc[0]
-        now_str = datetime.now().strftime("%d/%m/%Y – %H:%M")
+        if readings.empty: return f"Sem dados recentes para {device_id}."
         
-        # Calculate simplistic risk if not present
-        risk = last.get('risk_score', 0.65) # Mock default to show 'preventive' example
+        now_str = datetime.now().strftime("%d/%m/%Y – %H:%M") # Format expected by user
+        # Note: ReportFormatter handles formatting too, but we pass string here
+        
+        return self._generate_report_string(
+            readings, 
+            now_str, 
+            device_id, 
+            header_override="⚠️ RELATÓRIO RÁPIDO (AGORA)"
+        )
+
+    def _generate_historical_report(self, device_id, date_str):
+        # Fetch window around that time
+        df = self.db.get_readings_window(device_id, date_str, window_minutes=60)
+        if df.empty:
+             return f"Não encontrei dados para {device_id} em {date_str}."
+        
+        return self._generate_report_string(
+            df, 
+            date_str, 
+            device_id, 
+            header_override="📊 RELATÓRIO COMPLETO (HISTÓRICO)"
+        )
+
+    def _analyze_status(self, risk, temp, vib):
+        """Helper to determine status, sensor context, and recommendations."""
         risk_pct = risk * 100
-        
-        current_temp = last['temperature']
-        current_vib = last['vibration']
         
         # Status Logic
         if risk_pct < 30:
-            status = "Normal"
+            status = "Normal (Operação Estável)"
+            rec_main = "Manter monitoramento padrão."
+            analysis_main = "Parâmetros operacionais dentro da normalidade."
         elif risk_pct < 70:
             status = "Preventivo (antes do modo crítico)"
+            rec_main = "Inspeção preventiva e monitoramento reforçado."
+            analysis_main = "Tendência de aumento de risco detectada pela IA."
         else:
             status = "CRÍTICO"
+            rec_main = "PARADA IMEDIATA para manutenção."
+            analysis_main = "Deterioração acelerada e alta probabilidade de falha."
 
-        # Determine Primary Sensor Context
+        # Primary Sensor Context
         limit_temp = 85.0
         limit_vib = 4.5
         
-        temp_ratio = current_temp / limit_temp
-        vib_ratio = current_vib / limit_vib
+        temp_ratio = temp / limit_temp
+        vib_ratio = vib / limit_vib
         
         if vib_ratio > temp_ratio:
             sensor = "Vibração"
-            val_atual = f"{current_vib:.2f} mm/s"
-            limite = f"{limit_vib:.1f} mm/s"
-            analysis_text = f"Níveis de vibração ({val_atual}) acima do ideal, indicando possível desbalanceamento ou desgaste."
-            rec_text = "Realizar análise de espectro de vibração e verificar fixação da base."
+            val_atual = vib
+            limit = limit_vib
+            unit = "mm/s"
+            specific_analysis = "Vibração elevada detectada."
+            specific_rec = "Verificar alinhamento e rolamentos."
         else:
             sensor = "Temperatura"
-            val_atual = f"{current_temp:.1f} °C"
-            limite = f"{limit_temp:.1f} °C"
-            analysis_text = f"Temperatura de operação ({val_atual}) próxima do limite, indicando sobrecarga ou deficiência na troca térmica."
-            rec_text = "Inspecionar desobstrução das aletas de refrigeração e carga do motor."
-            
-        return f"""
-⚠️ RELATÓRIO RÁPIDO (AGORA)
+            val_atual = temp
+            limit = limit_temp
+            unit = "°C"
+            specific_analysis = "Aquecimento identificado."
+            specific_rec = "Verificar sistema de resfriamento."
 
-Status: {status}
-Data/Hora: {now_str}
-Equipamento: {device_id}
-Sensor: {sensor}
-Valor Atual: {val_atual}
-Limite Operacional: {limite}
-Risco Estimado (IA): {risk_pct:.0f}%
-
-Análise:
-{analysis_text}
-
-Recomendação:
-{rec_text}
-
-"""
-
-        return f"Comandos: login, logout, status [id], relatorio [id], oee [id], predict [id]{footer}"
+        return {
+            'status': status,
+            'sensor': sensor,
+            'value': val_atual,
+            'limit': limit,
+            'unit': unit,
+            'analysis': f"{analysis_main} {specific_analysis}",
+            'recommendation': f"{rec_main} {specific_rec}"
+        }
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

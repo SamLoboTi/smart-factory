@@ -10,6 +10,11 @@ export class AppController {
     return this.appService.getLatestReadings();
   }
 
+  @Get()
+  getHealth() {
+    return { status: 'ok', service: 'smart-factory-api' };
+  }
+
   @Get('kpis')
   async getKPIs(
     @Query('start') start?: string,

@@ -23,17 +23,18 @@ class SmartAssistant:
 
     def ask(self, query):
         """
-        Enhanced Assistant with Auth & Prediction.
+        Enhanced Assistant with Auth, Prediction & Reports.
         Commands:
         - "login <user> <pass>"
         - "status <device_id>"
-        - "oee <device_id>"
         - "predict <device_id>" (Requires Admin)
+        - "relatório <rápido|completo>"
         """
         original_query = query
         query = self._normalize_text(query)
         parts = query.split()
         
+        # Default Greeting
         if not parts:
             return "Olá! Sou seu assistente inteligente. Monitorando a planta em tempo real. Como posso ajudar você hoje?"
 
@@ -45,7 +46,7 @@ class SmartAssistant:
             user = self.auth.login(parts[1], parts[2])
             if user:
                 self.current_user = user
-                return f"Login bem-sucedido! Bem-vindo, {user['username']} ({user['role']})."
+                return f"Login realizado com sucesso. Bem-vindo, {user['username']} ({user['role']})."
             else:
                 return "Falha no login. Verifique suas credenciais."
 
@@ -60,56 +61,41 @@ class SmartAssistant:
 
         # --- PUBLIC & CONTEXTUAL COMMANDS ---
         
-        report_time = datetime.now().strftime("%d/%m/%Y – %H:%M")
-        footer = "" # Removing footer to keep it clean as per user request style
-
         # 1. Status Check
         if "status" in query:
             device_id = self._extract_device_id(query, parts)
             if not device_id:
-                # If no ID found, maybe ask? Or listing?
-                # For now, default or ask.
                 return "Por favor, especifique o ID do dispositivo para verificar o status (ex: status DEV-100)."
 
             # Check for history date
-            date_match = self._extract_date(original_query) # Use original for case/format preservation if needed
+            date_match = self._extract_date(original_query)
             
             if date_match:
+                # Historical Status
                 target_date = date_match
                 readings = self.db.get_readings_at(device_id, target_date)
-                is_historical = True
                 prefix = f"📜 [HISTÓRICO {target_date}]"
                 if readings.empty:
-                    return f"⚠️ Não encontrei registros para {device_id} em {target_date}. Verifique se a data está correta."
+                    return f"⚠️ Não encontrei registros para {device_id} em {target_date}. Verifique a data."
             else:
+                # Current Status
                 readings = self.db.get_recent_readings(device_id, limit=1)
-                is_historical = False
                 prefix = "🟢 [AGORA]"
 
             info = self.db.get_device_info(device_id)
             if not info:
-                 return f"Dispositivo {device_id} não encontrado no sistema."
+                 return f"Dispositivo {device_id} não encontrado."
             
             if readings.empty:
                 return f"Sem dados recentes para {device_id}."
 
-            # Construct status string
             current_status = readings.iloc[0]['status']
             temp = readings.iloc[0]['temperature']
+            
+            # Simple status line as requested, without complicating it
             return f"{prefix} {info['name']} ({device_id}): {current_status}. Temperatura: {temp:.1f}°C."
 
-        # 2. OEE Check
-        if "oee" in query:
-            if not self.current_user:
-                return "🔒 Para visualizar KPIs como OEE, por favor faça login."
-            
-            device_id = self._extract_device_id(query, parts)
-            if not device_id: return "Qual dispositivo? (ex: oee DEV-100)"
-            
-            oee, avail, perf, qual = self.kpi.calculate_oee(device_id)
-            return f"📊 OEE {device_id}: {oee}%. (Disponibilidade: {avail}%, Performance: {perf}%, Qualidade: {qual}%)"
-
-        # 3. Prediction
+        # 2. Prediction
         if "predict" in query or "prever" in query or "predicao" in query:
             if not self.auth.check_permission(self.current_user, 'admin'):
                 return "🔒 Acesso restrito. Apenas administradores podem gerar previsões de falha."
@@ -128,33 +114,30 @@ class SmartAssistant:
             
             return f"{status_icon} Análise de Risco ({device_id}):\n📉 Probabilidade de Falha: {risk_pct:.1f}%\n⏳ Vida Útil Restante: {rul_text}\n⚡ Desperdício de Energia: {waste:.1f}W"
 
-        # 4. Reports (Relatório)
+        # 3. Reports (Relatório)
         if "relatorio" in query:
-            # 4a. Quick Report (Rápido/Atual/Agora)
+            # 3a. Quick Report (Rápido/Atual/Agora)
             if "rapido" in query or "atual" in query or "agora" in query:
-                device_id = self._extract_device_id(query, parts) or "DEV-100"
+                device_id = self._extract_device_id(query, parts) or "DEV-100" # Default if not specified
                 return self._generate_quick_report(query, device_id)
             
-            # 4b. Complete/Historical Report
+            # 3b. Complete/Historical Report
             if "completo" in query or "historico" in query or "detalhado" in query:
-                 # Check for date in query
                  date_match = self._extract_date(original_query)
                  device_id = self._extract_device_id(query, parts) or "DEV-100"
                  
                  if date_match:
-                     # Generate immediately
                      return self._generate_historical_report(device_id, date_match)
                  else:
-                     # Ask for date
                      self.context['report_type'] = 'complete'
                      self.context['report_device_id'] = device_id
                      self.context['awaiting_date'] = True
                      return f"Para o relatório completo de {device_id}, por favor informe a data e hora (dd/mm/aaaa hh:mm)."
 
-            # 4c. General/Unspecified
-            return "Você gostaria de um relatório **Rápido** (situação atual) ou **Completo** (histórico)? Digite 'relatório rápido' ou 'relatório completo'."
+            # 3c. General Inquiry
+            return "Você gostaria de um relatório **Rápido** (situação atual) ou **Completo** (histórico)? Por favor, especifique."
 
-        # 5. Explain
+        # 4. Explain
         if "explain" in query or "explicar" in query or "explica" in query:
             device_id = self._extract_device_id(query, parts)
             if not device_id: return "Qual dispositivo você quer que eu analise? (ex: explicar DEV-100)"
@@ -170,9 +153,8 @@ class SmartAssistant:
             explanation = "Operação normal." if not reasons else "Fatores de risco: " + "; ".join(reasons) + "."
             return f"🧐 Análise ({device_id}): {explanation}"
 
-        # --- CONTEXT HANDLING (Follow-up) ---
+        # --- CONTEXT HANDLING ---
         if self.context.get('awaiting_date'):
-            # Try to parse date from this new query
             date_match = self._extract_date(original_query)
             if date_match and len(date_match) > 10: # Basic check for full datetime
                  target_id = self.context.get('report_device_id', 'DEV-100')
@@ -182,12 +164,13 @@ class SmartAssistant:
                  return "Formato de data inválido. Por favor use: dd/mm/aaaa hh:mm"
 
         # --- FALLBACK ---
+        # Polite fallback without "OEE"
         return (
-            "Desculpe, não entendi. Tente comandos como:\n"
+            "Desculpe, não entendi o comando. Tente:\n"
             "- 'Status DEV-100'\n"
             "- 'Relatório rápido'\n"
             "- 'Relatório completo'\n"
-            "- 'OEE DEV-100' (requer login)"
+            "- 'Login <user> <pass>'"
         )
 
     def _normalize_text(self, text):
@@ -269,7 +252,7 @@ class SmartAssistant:
             df, 
             date_str, 
             device_id, 
-            header_override="📊 RELATÓRIO COMPLETO (HISTÓRICO)"
+            header_override="" # Explicitly empty as requested by user logic if they don't want a header for 'Complete'
         )
 
     def _analyze_status(self, risk, temp, vib):

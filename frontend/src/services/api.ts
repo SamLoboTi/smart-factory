@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://smart-factory-api-kox6.onrender.com');
 
 export interface SensorReading {
     id: number;
@@ -58,7 +58,7 @@ export const api = {
 
     sendChat: async (message: string) => {
         try {
-            const res = await fetch(`${API_URL}/chat`, {
+            const res = await fetch(`${API_URL}/assistant/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })

@@ -1,0 +1,51 @@
+
+--- TEST: Empty Query ---
+Query: ''
+Response:
+Olá! Sou seu assistente inteligente. Monitorando a planta em tempo real. Como posso ajudar você hoje?
+
+--- TEST: Accent: 'relatório' (Broad) ---
+Query: 'relatório'
+Response:
+Você gostaria de um relatório **Rápido** (situação atual) ou **Completo** (histórico)? Por favor, especifique.
+
+--- TEST: Quick Report ---
+Query: 'relatório rápido'
+Response:
+⚠️ RELATÓRIO RÁPIDO (AGORA)
+
+Status: Normal (Operação Estável)
+Data/Hora: 11/02/2026 – 17:50
+Equipamento: DEV-100
+Sensor: Temperatura
+Valor Atual: 60.98 °C
+Limite Operacional: 85.0 °C
+Risco Estimado (IA): 0.0%
+
+Análise:
+Parâmetros operacionais dentro da normalidade. Aquecimento identificado.
+
+Recomendação:
+Manter monitoramento padrão. Verificar sistema de resfriamento.
+✅ Quick Report Format Verified
+
+--- TEST: Complete Report (No Date) ---
+Query: 'relatório completo'
+Response:
+Para o relatório completo de DEV-100, por favor informe a data e hora (dd/mm/aaaa hh:mm).
+
+--- TEST: Unknown Command ---
+Query: 'blablabla'
+Response:
+Formato de data inválido. Por favor use: dd/mm/aaaa hh:mm
+
+--- TEST: OEE Command (Should Fail/Fallback) ---
+Query: 'oee dev-100'
+Response:
+Formato de data inválido. Por favor use: dd/mm/aaaa hh:mm
+❓ OEE Result Ambiguous
+
+--- TEST: Status DEV-100 ---
+Query: 'status dev-100'
+Response:
+🟢 [AGORA] CNC Machine 1 (DEV-100): running. Temperatura: 69.5°C.

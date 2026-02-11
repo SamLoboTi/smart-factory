@@ -1,17 +1,15 @@
-
 ⚠️ RELATÓRIO RÁPIDO (AGORA)
 
-Status: Normal
-Data/Hora: 10/02/2026 – 20:12
+Status: Normal (Operação Estável)
+Data/Hora: 10/02/2026 – 21:29
 Equipamento: DEV-100
 Sensor: Temperatura
-Valor Atual: 69.5 °C
+Valor Atual: 69.52 °C
 Limite Operacional: 85.0 °C
-Risco Estimado (IA): 0%
+Risco Estimado (IA): 0.0%
 
 Análise:
-Temperatura de operação (69.5 °C) próxima do limite, indicando sobrecarga ou deficiência na troca térmica.
+Parâmetros operacionais dentro da normalidade. Aquecimento identificado.
 
 Recomendação:
-Inspecionar desobstrução das aletas de refrigeração e carga do motor.
-
+Manter monitoramento padrão. Verificar sistema de resfriamento.

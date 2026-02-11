@@ -9,10 +9,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'http://localhost:3000',
-      'https://smart-factory.vercel.app',
-      'https://smart-factory-yhz5.vercel.app', // User's specific URL
-      /\.vercel\.app$/, // Allow all Vercel subdomains (Regex)
-      'https://smart-factory-api-kox6.onrender.com',
+      'https://smart-factory-yhz5-d3x1yu97c.vercel.app',
+      'https://smart-factory-dashboard.vercel.app'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

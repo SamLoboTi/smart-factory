@@ -185,66 +185,46 @@ class AlertManager:
         level = alert_data['alert_level']
         is_critical = (level == 'critical')
         
-        # Header & Status
-        if is_critical:
-            header = "🚨 ALERTA CRÍTICO – SMART FACTORY"
-            status = "CRÍTICO (ação imediata necessária)"
-        else:
-            header = "⚠️ PRÉ-ALERTA – SMART FACTORY"
-            status = "Preventivo (antes do modo crítico)"
-        
-        # Formatar timestamp
-        dt = datetime.fromisoformat(alert_data['timestamp'])
-        timestamp_str = dt.strftime("%d/%m/%Y – %H:%M")
-        
-        # Identificar sensor principal (o com maior proximidade ou risco)
-        sensor_name = "Geral"
-        current_val = 0.0
-        limit_val = 0.0
-        unit = ""
-        
+        # Prepare Data for Formatter
+        # Identify sensor context again (or reuse from alert_data if available)
         if alert_data['temp_proximity'] > alert_data['vib_proximity']:
-            sensor_name = "Temperatura"
-            current_val = alert_data['temperature']
-            limit_val = alert_data['temp_limit']
+            sensor = "Temperatura"
             unit = "°C"
         else:
-            sensor_name = "Vibração"
-            current_val = alert_data['vibration']
-            limit_val = alert_data['vib_limit']
+            sensor = "Vibração"
             unit = "mm/s"
 
-        # Construir relatório
-        report = f"""{header}
-
-Status: {status}
-Data/Hora: {timestamp_str}
-Equipamento: {alert_data['device_name']}
-Sensor: {sensor_name}
-Valor Atual: {current_val:.1f}{unit}
-Limite Operacional: {limit_val:.1f}{unit}
-Risco Estimado (IA): {alert_data['risk_score']*100:.0f}%
-
-Análise:
-"""
-        # Análise baseada na tendência e motivos
+        # Analysis Logic
         if alert_data['trend'] == 'increasing_abnormal':
-            report += "Tendência contínua de aumento acima do padrão histórico.\n"
+            analysis = "Tendência contínua de aumento acima do padrão histórico."
         elif alert_data['reasons']:
-            report += f"{alert_data['reasons'][0]}\n"
+            analysis = f"{alert_data['reasons'][0]}"
         else:
-            report += "Variação detectada nos parâmetros operacionais.\n"
+            analysis = "Variação detectada nos parâmetros operacionais."
 
-        report += "\nRecomendação:\n"
-        
+        # Recommendation Logic
         if is_critical:
-            report += "Parada imediata e manutenção corretiva.\n"
+            recommendation = "Parada imediata e manutenção corretiva."
+            status_text = "CRÍTICO (ação imediata necessária)"
         else:
-            report += "Inspeção preventiva e monitoramento reforçado nas próximas horas.\n"
+            recommendation = "Inspeção preventiva e monitoramento reforçado nas próximas horas."
+            status_text = "Preventivo (antes do modo crítico)"
+
+        report_data = {
+            'status': status_text,
+            'timestamp': alert_data['timestamp'],
+            'device_name': alert_data['device_name'],
+            'sensor': sensor,
+            'value': alert_data['temperature'] if sensor == "Temperatura" else alert_data['vibration'],
+            'limit': alert_data['temp_limit'] if sensor == "Temperatura" else alert_data['vib_limit'],
+            'unit': unit,
+            'risk_score': alert_data['risk_score'],
+            'analysis': analysis,
+            'recommendation': recommendation
+        }
         
-        report += "\n📊 Print do dashboard em anexo.jpg"
-        
-        return report
+        from src.report_formatter import ReportFormatter
+        return ReportFormatter.format_report(report_data)
     
     def get_alert_history(self, device_id: Optional[str] = None, limit: int = 20) -> List[Dict]:
         """

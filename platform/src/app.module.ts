@@ -5,6 +5,8 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SensorLeitura } from './sensor-leitura.entity';
+import { AssistantController } from './assistant/assistant.controller';
+import { AssistantService } from './assistant/assistant.service';
 
 @Module({
   imports: [
@@ -19,7 +21,7 @@ import { SensorLeitura } from './sensor-leitura.entity';
     }),
     TypeOrmModule.forFeature([SensorLeitura]),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, AssistantController],
+  providers: [AppService, AssistantService],
 })
 export class AppModule { }

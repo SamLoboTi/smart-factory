@@ -84,68 +84,15 @@ class NotificationService:
     
     def _format_prealert_message(self, alert_data: Dict, report: str) -> str:
         """
-        Formata mensagem de pré-alerta (preventivo).
+        Retorna o relatório já formatado (padronizado).
         """
-        dt = datetime.fromisoformat(alert_data['timestamp'])
-        timestamp_str = dt.strftime("%d/%m/%Y – %H:%M")
-        
-        message = f"""⚠️ *PRÉ-ALERTA – SMART FACTORY*
-
-*Status:* Preventivo (antes do modo crítico)
-*Data/Hora:* {timestamp_str}
-*Equipamento:* {alert_data['device_name']}
-*Sensor:* Temperatura / Vibração
-
-*Valores Atuais:*
-🌡️ Temperatura: {alert_data['temperature']:.1f}°C
-📊 Limite: {alert_data['temp_limit']:.1f}°C
-🔴 Proximidade: {alert_data['temp_proximity']*100:.1f}%
-
-📳 Vibração: {alert_data['vibration']:.2f} mm/s
-📊 Limite: {alert_data['vib_limit']:.2f} mm/s
-🔴 Proximidade: {alert_data['vib_proximity']*100:.1f}%
-
-*Risco Estimado (IA):* {alert_data['risk_score']*100:.1f}%
-
-*Análise:*
-{alert_data['reasons'][0] if alert_data['reasons'] else 'Tendência anormal detectada'}
-
-*Recomendação:*
-✅ Inspeção preventiva recomendada
-✅ Monitoramento reforçado nas próximas horas
-
-📊 Relatório completo e dashboard em anexo.
-"""
-        return message
+        return report
     
     def _format_critical_message(self, alert_data: Dict, report: str) -> str:
         """
-        Formata mensagem de alerta crítico.
+        Retorna o relatório já formatado (padronizado).
         """
-        dt = datetime.fromisoformat(alert_data['timestamp'])
-        timestamp_str = dt.strftime("%d/%m/%Y – %H:%M")
-        
-        message = f"""🚨 *ALERTA CRÍTICO – SMART FACTORY*
-
-*Status:* CRÍTICO (ação imediata necessária)
-*Data/Hora:* {timestamp_str}
-*Equipamento:* {alert_data['device_name']}
-
-*Valores Críticos:*
-🌡️ Temperatura: {alert_data['temperature']:.1f}°C / {alert_data['temp_limit']:.1f}°C
-📳 Vibração: {alert_data['vibration']:.2f} / {alert_data['vib_limit']:.2f} mm/s
-
-*Risco Estimado (IA):* {alert_data['risk_score']*100:.1f}%
-*Vida Útil Restante:* {alert_data['rul_hours']:.1f} horas
-
-*AÇÃO NECESSÁRIA:*
-🛑 Parar equipamento imediatamente
-🔧 Inspeção técnica urgente
-📞 Contatar equipe de manutenção
-
-📊 Relatório completo e dashboard em anexo.
-"""
-        return message
+        return report
     
     def _send_message(self, message: str, image_path: Optional[str] = None) -> bool:
         """

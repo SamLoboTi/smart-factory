@@ -116,7 +116,7 @@ export class AppService {
 
     // 1. Heurísticas Rápidas (TS)
     if (msg.includes('ola') || msg.includes('oi') || msg.includes('ajuda')) {
-      return { reply: "🤖 Olá! Sou o assistente da Smart Factory. Pergunte sobre 'status <id>', 'oee <id>', 'falhas' ou 'vibração'." };
+      return { reply: "🤖 Olá! Sou o assistente da Smart Factory. Pergunte sobre 'status <id>', 'relatório rápido', 'relatório completo' ou 'falhas'." };
     }
 
     // Lógica de Alertas
@@ -142,15 +142,30 @@ export class AppService {
 
     // 2. Inteligência Avançada (Python)
     try {
-      const { stdout } = await execAsync(`python ../src/assistant.py "${message}"`);
+      // Fixed path: from platform/src to project root src
+      const pythonPath = process.env.PYTHON_PATH || 'python';
+      const assistantPath = '../../src/assistant.py';
+      const command = `${pythonPath} ${assistantPath} "${message.replace(/"/g, '\\"')}"`;
+
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: __dirname,
+        timeout: 10000 // 10 second timeout
+      });
+
+      if (stderr) {
+        console.error("Python stderr:", stderr);
+      }
+
       if (stdout && stdout.trim()) {
         return { reply: stdout.trim() };
       }
     } catch (error) {
       console.error("Assistant Error:", error);
+      // Return a more helpful error message
+      return { reply: "Desculpe, não consegui processar sua mensagem no momento. Tente novamente." };
     }
 
-    return { reply: "🤔 Não entendi. Tente perguntar sobre 'status [id]', 'oee [id]' ou 'falhas'." };
+    return { reply: "🤔 Não entendi. Tente perguntar sobre 'status [id]', 'relatório rápido' ou 'relatório completo'." };
   }
 
   // 5. REPORT GENERATION

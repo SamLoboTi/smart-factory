@@ -110,16 +110,44 @@ export class AppService {
     };
   }
 
-  // 4. CHAT LOGIC (Hybrid: TS Heuristic + Python Core)
+  // 4. CHAT LOGIC (Native TypeScript - No Python Dependency)
   async processChat(message: string) {
-    const msg = message.toLowerCase();
+    const msg = message.toLowerCase().trim();
 
-    // 1. Heurísticas Rápidas (TS)
-    if (msg.includes('ola') || msg.includes('oi') || msg.includes('ajuda')) {
-      return { reply: "🤖 Olá! Sou o assistente da Smart Factory. Pergunte sobre 'status <id>', 'relatório rápido', 'relatório completo' ou 'falhas'." };
+    // 1. Greeting
+    if (!msg || msg.includes('ola') || msg.includes('oi') || msg.includes('ajuda')) {
+      return { reply: "Olá! Sou seu assistente inteligente. Monitorando a planta em tempo real. Como posso ajudar você hoje?" };
     }
 
-    // Lógica de Alertas
+    // 2. Report Requests
+    if (msg.includes('relatorio') || msg.includes('relatório')) {
+      // Quick Report
+      if (msg.includes('rapido') || msg.includes('rápido') || msg.includes('atual') || msg.includes('agora')) {
+        return await this.generateQuickReport();
+      }
+
+      // Complete Report
+      if (msg.includes('completo') || msg.includes('historico') || msg.includes('histórico')) {
+        return { reply: "Para o relatório completo, por favor informe a data e hora (dd/mm/aaaa hh:mm)." };
+      }
+
+      // General report inquiry
+      return { reply: "Você gostaria de um relatório **Rápido** (situação atual) ou **Completo** (histórico)? Por favor, especifique." };
+    }
+
+    // 3. Status Check
+    if (msg.includes('status')) {
+      const readings = await this.getLatestReadings();
+      if (!readings.length) return { reply: "Sem dados recentes disponíveis." };
+
+      const last = readings[0];
+      const statusIcon = last.status === 'rodando' ? '🟢' : '🔴';
+      return {
+        reply: `${statusIcon} [AGORA] ${last.device_id}: ${last.status}. Temperatura: ${last.temperatura.toFixed(1)}°C.`
+      };
+    }
+
+    // 4. Alerts
     if (msg.includes('falha') || msg.includes('alerta') || msg.includes('parada') || msg.includes('erro') || msg.includes('risco')) {
       const alerts = await this.getAlerts();
       const count = alerts.vibracao_alta.length + alerts.ultimas_paradas.length + alerts.risco_alto.length;
@@ -133,6 +161,7 @@ export class AppService {
       return { reply };
     }
 
+    // 5. Temperature/Vibration
     if (msg.includes('temperatura') || msg.includes('vibra')) {
       const readings = await this.getLatestReadings();
       if (!readings.length) return { reply: "Sem dados nos sensores ainda." };
@@ -140,32 +169,79 @@ export class AppService {
       return { reply: `📊 Última leitura: ${last.temperatura.toFixed(1)}°C / ${last.vibracao.toFixed(2)}mm/s` };
     }
 
-    // 2. Inteligência Avançada (Python)
-    try {
-      // Fixed path: from platform/src to project root src
-      const pythonPath = process.env.PYTHON_PATH || 'python';
-      const assistantPath = '../../src/assistant.py';
-      const command = `${pythonPath} ${assistantPath} "${message.replace(/"/g, '\\"')}"`;
+    // Fallback
+    return {
+      reply: "Desculpe, não entendi o comando. Tente:\n- 'Status'\n- 'Relatório rápido'\n- 'Relatório completo'\n- 'Alertas'"
+    };
+  }
 
-      const { stdout, stderr } = await execAsync(command, {
-        cwd: __dirname,
-        timeout: 10000 // 10 second timeout
-      });
+  // Generate Quick Report (Native TypeScript)
+  async generateQuickReport() {
+    const readings = await this.sensorRepo.find({
+      order: { id: 'DESC' },
+      take: 5
+    });
 
-      if (stderr) {
-        console.error("Python stderr:", stderr);
-      }
-
-      if (stdout && stdout.trim()) {
-        return { reply: stdout.trim() };
-      }
-    } catch (error) {
-      console.error("Assistant Error:", error);
-      // Return a more helpful error message
-      return { reply: "Desculpe, não consegui processar sua mensagem no momento. Tente novamente." };
+    if (!readings.length) {
+      return { reply: "Sem dados recentes disponíveis." };
     }
 
-    return { reply: "🤔 Não entendi. Tente perguntar sobre 'status [id]', 'relatório rápido' ou 'relatório completo'." };
+    const last = readings[0];
+    const deviceId = last.device_id || 'DEV-100';
+
+    // Calculate risk score (simple heuristic)
+    const tempRatio = last.temperatura / 85.0;
+    const vibRatio = last.vibracao / 4.5;
+    const riskScore = Math.max(tempRatio, vibRatio);
+    const riskPct = Math.min(100, riskScore * 100);
+
+    // Determine status
+    let status: string;
+    let analysis: string;
+    let recommendation: string;
+
+    if (riskPct < 30) {
+      status = "Normal (Operação Estável)";
+      analysis = "Parâmetros operacionais dentro da normalidade.";
+      recommendation = "Manter monitoramento padrão.";
+    } else if (riskPct < 70) {
+      status = "Preventivo (antes do modo crítico)";
+      analysis = "Tendência de aumento de risco detectada.";
+      recommendation = "Inspeção preventiva e monitoramento reforçado.";
+    } else {
+      status = "CRÍTICO";
+      analysis = "Deterioração acelerada e alta probabilidade de falha.";
+      recommendation = "PARADA IMEDIATA para manutenção.";
+    }
+
+    // Determine primary sensor
+    const sensor = vibRatio > tempRatio ? "Vibração" : "Temperatura";
+    const value = vibRatio > tempRatio ? last.vibracao : last.temperatura;
+    const limit = vibRatio > tempRatio ? 4.5 : 85.0;
+    const unit = vibRatio > tempRatio ? "mm/s" : "°C";
+
+    // Format timestamp
+    const now = new Date();
+    const timestamp = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} – ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    // Build report
+    const report = `⚠️ RELATÓRIO RÁPIDO (AGORA)
+
+Status: ${status}
+Data/Hora: ${timestamp}
+Equipamento: ${deviceId}
+Sensor: ${sensor}
+Valor Atual: ${value.toFixed(2)} ${unit}
+Limite Operacional: ${limit} ${unit}
+Risco Estimado (IA): ${riskPct.toFixed(1)}%
+
+Análise:
+${analysis}
+
+Recomendação:
+${recommendation}`;
+
+    return { reply: report };
   }
 
   // 5. REPORT GENERATION

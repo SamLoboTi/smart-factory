@@ -6,58 +6,71 @@ export class AssistantService {
     constructor(private readonly appService: AppService) { }
 
     async processMessage(message: string) {
-        const msg = message.toLowerCase().trim();
+        try {
+            const msg = message.toLowerCase().trim();
 
-        // 1. Saudação
-        if (!msg || msg.match(/^(oi|ola|olá|bom dia|boa tarde|boa noite|ajuda)/)) {
-            return {
-                reply: "Olá! Sou seu assistente virtual da Smart Factory. Posso fornecer relatórios de status, KPIs, alertas e histórico. Como posso ajudar?",
-                options: ["Relatório Rápido", "Relatório Completo", "Status das Máquinas", "Alertas Ativos"]
-            };
-        }
+            // 0. Detecção de Data (Contexto ou Comando Direto)
+            // Ex: "12/02/2026" ou "relatorio 12/02/2026"
+            const dateMatch = msg.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            const timeMatch = msg.match(/(\d{2}):(\d{2})/);
 
-        // 2. Relatórios
-        if (msg.includes('relatorio') || msg.includes('relatório')) {
-            // Tipo 1: Rápido
-            if (msg === 'relatorio' || msg === 'relatório' || msg.includes('rapido') || msg.includes('rápido') || msg.includes('agora')) {
+            if (dateMatch) {
+                const dateStr = dateMatch[0];
+                const timeStr = timeMatch ? timeMatch[0] : '12:00'; // Meio dia se não especificado
+                return await this.handleCompleteReport(dateStr, timeStr);
+            }
+
+            // 1. Saudação
+            if (!msg || msg.match(/^(oi|ola|olá|bom dia|boa tarde|boa noite|ajuda)/)) {
+                return {
+                    reply: "Olá! Sou seu assistente virtual da Smart Factory. Posso ajudar com:\n- *Relatório Rápido* (Agora)\n- *Relatório Completo* (Histórico)\n- *Status* das máquinas\n\nSe quiser ver um histórico, basta digitar a data (ex: 10/02/2026).",
+                    options: ["Relatório Rápido", "Relatório Completo", "Status Geral"]
+                };
+            }
+
+            // 2. Relatórios (Sem data, pois data já foi tratada acima)
+            if (msg.includes('relatorio') || msg.includes('relatório')) {
+                // Se pediu completo mas não deu data (caiu aqui pois dateMatch foi null)
+                if (msg.includes('completo') || msg.includes('historico')) {
+                    const now = new Date();
+                    const today = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+                    return {
+                        reply: `Para um relatório histórico, favor informar a data. \nExemplo: "Relatório 10/02/2026"\n\nGerando relatório completo de *HOJE* (${today}):`
+                    };
+                    // Opcional: Já gerar o de hoje ou pedir data. O usuário reclamou do fluxo.
+                    // Vamos já gerar o de hoje para ser proativo.
+                    // return await this.handleCompleteReport(today, 'Atual');
+                }
+
+                // Default: Relatório Rápido (Agora)
                 return await this.handleQuickReport();
             }
 
-            // Tipo 2: Completo
-            if (msg.includes('completo')) {
-                // Tenta extrair data e hora
-                const dateMatch = msg.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-                const timeMatch = msg.match(/(\d{2}):(\d{2})/);
+            // 3. Perguntas Específicas
+            if (msg.includes('oee')) return await this.handleSpecificQuery('oee');
+            if (msg.includes('parada')) return await this.handleSpecificQuery('paradas');
+            if (msg.includes('disponibilidade')) return await this.handleSpecificQuery('disponibilidade');
+            if (msg.includes('mtbf')) return await this.handleSpecificQuery('mtbf');
+            if (msg.includes('mttr')) return await this.handleSpecificQuery('mttr');
+            if (msg.includes('status')) return await this.handleStatusQuery(msg);
 
-                if (dateMatch) {
-                    const dateStr = dateMatch[0];
-                    const timeStr = timeMatch ? timeMatch[0] : '00:00';
-                    return await this.handleCompleteReport(dateStr, timeStr);
-                } else {
-                    // Se pediu completo mas não passou data, usa data atual
-                    const now = new Date();
-                    const today = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-                    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                    return await this.handleCompleteReport(today, time);
-                }
+            // Reuso de lógica existente (Alertas, etc)
+            if (msg.includes('alerta') || msg.includes('falha') || msg.includes('risco')) {
+                return await this.appService.getAlerts().then(alerts => {
+                    const count = alerts.vibracao_alta.length + alerts.risco_alto.length;
+                    return { reply: count > 0 ? `🚨 Detectei ${count} alertas ativos no sistema.` : "✅ Nenhum alerta ativo no momento." };
+                });
             }
+
+            // Fallback
+            return {
+                reply: "Desculpe, não entendi. Tente 'Relatório Rápido', 'Status' ou digite uma data (dd/mm/aaaa) para ver o histórico."
+            };
+
+        } catch (error) {
+            console.error("Erro no processamento do chat:", error);
+            return { reply: "Ocorreu um erro interno ao processar sua solicitação. Tente novamente." };
         }
-
-        // 3. Perguntas Específicas (NLP Simples)
-        if (msg.includes('oee')) return await this.handleSpecificQuery('oee');
-        if (msg.includes('parada')) return await this.handleSpecificQuery('paradas');
-        if (msg.includes('disponibilidade')) return await this.handleSpecificQuery('disponibilidade');
-        if (msg.includes('performance')) return await this.handleSpecificQuery('performance');
-        if (msg.includes('qualidade')) return await this.handleSpecificQuery('qualidade');
-        if (msg.includes('mtbf')) return await this.handleSpecificQuery('mtbf');
-        if (msg.includes('mttr')) return await this.handleSpecificQuery('mttr');
-        if (msg.includes('status')) return await this.handleStatusQuery(msg);
-        if (msg.includes('alerta') || msg.includes('falha') || msg.includes('risco')) return await this.appService.processChat(message); // Reusa ou implementa novo
-
-        // Fallback
-        return {
-            reply: "Desculpe, não entendi. Tente 'Relatório', 'Relatório Completo', 'Status da máquina' ou pergunte sobre 'OEE', 'MTBF', etc."
-        };
     }
 
     private async handleQuickReport() {

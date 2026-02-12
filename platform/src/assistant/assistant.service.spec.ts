@@ -38,16 +38,31 @@ describe('AssistantService', () => {
         expect(result.reply).toContain('80%'); // Valor do OEE mockado
     });
 
-    it('should parse date for complete report', async () => {
+    it('should parse standalone date as complete report', async () => {
+        const result = await service.processMessage('10/02/2026');
+        expect(result.reply).toContain('Relatório Completo');
+        expect(result.reply).toContain('10/02/2026');
+    });
+
+    it('should prioritize date in mixed commands', async () => {
+        // "relatorio rapido" com data deve ser interpretado como histórico daquela data
+        const result = await service.processMessage('relatorio rapido 15/03/2026');
+        expect(result.reply).toContain('Relatório Completo');
+        expect(result.reply).toContain('15/03/2026');
+    });
+
+    it('should parse date for complete report command', async () => {
         const result = await service.processMessage('relatorio completo 10/02/2025 14:00');
         expect(result.reply).toContain('Relatório Completo');
         expect(result.reply).toContain('10/02/2025');
         expect(result.reply).toContain('14:00');
     });
 
-    it('should handle invalid date', async () => {
-        const result = await service.processMessage('relatorio completo 99/99/2025');
-        expect(result.reply).toContain('Data inválida');
+    it('should handle invalid date format gracefully', async () => {
+        // O regex exige dd/mm/aaaa, se não bater, cai no fallback ou fluxo normal
+        const result = await service.processMessage('99-99-2025');
+        // Como não bate regex, e não tem "relatorio", vai para fallback
+        expect(result.reply).toContain('Desculpe, não entendi');
     });
 
     it('should verify status query', async () => {

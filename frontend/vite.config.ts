@@ -9,6 +9,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    allowedHosts: true,
     proxy: {
       '/sensores': proxyTarget,
       '/kpis': proxyTarget,

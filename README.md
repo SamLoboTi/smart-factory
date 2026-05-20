@@ -49,7 +49,7 @@ Acesse o painel em: `http://localhost:80`
 Link publico atual:
 
 ```text
-https://send-mls-craig-realized.trycloudflare.com
+https://flowers-after-guaranteed-roads.trycloudflare.com
 ```
 
 O `docker-compose.yml` tambem sobe um tunel publico via Cloudflare Quick Tunnel. Depois de iniciar os containers, copie o link gerado nos logs:

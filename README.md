@@ -44,6 +44,22 @@ docker-compose up --build
 
 Acesse o painel em: `http://localhost:80`
 
+### Link publico com tunelamento
+
+Link publico atual:
+
+```text
+https://send-mls-craig-realized.trycloudflare.com
+```
+
+O `docker-compose.yml` tambem sobe um tunel publico via Cloudflare Quick Tunnel. Depois de iniciar os containers, copie o link gerado nos logs:
+
+```bash
+docker compose logs -f tunnel
+```
+
+Procure uma URL parecida com `https://algum-nome.trycloudflare.com`. Esse sera o link publico do dashboard. Deixe o terminal/containers rodando enquanto estiver usando o link.
+
 ## 🛠️ Como Rodar (Manual)
 
 Se preferir rodar serviço por serviço:

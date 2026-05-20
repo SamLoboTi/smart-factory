@@ -46,9 +46,18 @@ services:
       - ./frontend/src:/app/src # Hot Reload
       - ./frontend/public:/app/public
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_PROXY_TARGET=http://backend:3000
     depends_on:
       - backend
+
+  # 4. PUBLIC TUNNEL (Cloudflare Quick Tunnel)
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: smart-factory-tunnel
+    command: tunnel --no-autoupdate --url http://frontend:5173
+    depends_on:
+      - frontend
+    restart: unless-stopped
 
 volumes:
   data:

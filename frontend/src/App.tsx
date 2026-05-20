@@ -10,7 +10,7 @@ import { Previsao } from './pages/Previsao';
 import { Suporte } from './pages/Suporte';
 
 import { ChatAssistant } from './components/ChatAssistant';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -19,10 +19,10 @@ function App() {
   const [criticalAlert, setCriticalAlert] = useState(false);
 
   // Poll for Critical Alerts
-  useState(() => {
+  useEffect(() => {
     const checkAlerts = async () => {
       try {
-        const res = await fetch('http://localhost:3000/alertas');
+        const res = await fetch('/alertas');
         const data = await res.json();
         if (data.critical_state) {
           setCriticalAlert(true);

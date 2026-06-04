@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { SensorLeitura } from './sensor-leitura.entity';
 import { AssistantController } from './assistant/assistant.controller';
 import { AssistantService } from './assistant/assistant.service';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AssistantService } from './assistant/assistant.service';
       synchronize: false,
     }),
     TypeOrmModule.forFeature([SensorLeitura]),
+    NotificationsModule,
   ],
   controllers: [AppController, AssistantController],
   providers: [AppService, AssistantService],

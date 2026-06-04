@@ -20,6 +20,7 @@ export const Header = () => {
         { label: 'Paradas', path: '/paradas' },
         { label: 'KPIs', path: '/kpis' },
         { label: 'Previsão', path: '/previsao' },
+        { label: 'Notificacoes', path: '/notificacoes' },
         { label: 'Assistente', path: '/suporte' }, // Assistente goes to support or chat? keeping simplified
     ];
 
@@ -73,11 +74,12 @@ export const Header = () => {
                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-[10px] flex items-center justify-center text-white min-w-[16px]">3</span>
                     </button>
                     <div className="flex items-center gap-3 pl-6 border-l border-white/10">
-                        <img
-                            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Samantha"
-                            alt="User"
-                            className="w-8 h-8 rounded-full bg-smart-card border border-white/20"
-                        />
+                        <div
+                            aria-label="Usuario"
+                            className="w-8 h-8 rounded-full bg-smart-card border border-white/20 flex items-center justify-center text-xs font-bold text-primary"
+                        >
+                            SA
+                        </div>
                         <div className="hidden lg:block text-right">
                             <p className="text-sm font-medium text-white">Samantha</p>
                             <p className="text-xs text-gray-400">Operadora Chefe</p>

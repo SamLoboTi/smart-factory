@@ -8,6 +8,7 @@ import { Paradas } from './pages/Paradas';
 import { PageKPIs } from './pages/KPIs';
 import { Previsao } from './pages/Previsao';
 import { Suporte } from './pages/Suporte';
+import { Notificacoes } from './pages/Notificacoes';
 
 import { ChatAssistant } from './components/ChatAssistant';
 import { useEffect, useState } from 'react';
@@ -75,6 +76,7 @@ function App() {
                 <Route path="/kpis" element={<PageKPIs />} />
                 <Route path="/previsao" element={<Previsao />} />
                 <Route path="/suporte" element={<Suporte />} />
+                <Route path="/notificacoes" element={<Notificacoes />} />
                 <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-500">Página em construção</div>} />
               </Routes>
             </div>

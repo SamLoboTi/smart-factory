@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { SensorLeitura } from './sensor-leitura.entity';
 import { spawn } from 'child_process';
 import { join } from 'path';
+import { NotificationsService } from './notifications/notifications.service';
 
 @Injectable()
 export class AppService {
   constructor(
     @InjectRepository(SensorLeitura)
     private sensorRepo: Repository<SensorLeitura>,
+    private notificationsService: NotificationsService,
   ) { }
 
   // 1. /sensores: Últimas 20 leituras
@@ -134,11 +136,27 @@ export class AppService {
     const criticalRisk = riskAlerts.length > 0;
     const criticalStops = stops.length > 2;
 
+    const criticalState = criticalVib || criticalRisk || criticalStops;
+    const notification = criticalState
+      ? await this.notificationsService.notifyAlert({
+        eventKey: `factory-alert-${riskAlerts[0]?.device_id || stops[0]?.device_id || 'plant'}`,
+        severity: criticalRisk ? 'critical' : 'pre_alert',
+        title: criticalRisk ? 'Risco critico de falha detectado' : 'Pre-alerta preventivo detectado',
+        message: [
+          `Risco ML alto: ${riskAlerts.length}`,
+          `Vibracao alta: ${vibrationAlerts.length}`,
+          `Paradas recentes: ${stops.length}`,
+          'Acesse o dashboard Smart Factory para validar a condicao operacional.',
+        ].join('\n'),
+      })
+      : { sent: false, reason: 'no_critical_state' };
+
     return {
       vibracao_alta: vibrationAlerts.slice(0, 50),
       risco_alto: riskAlerts.slice(0, 50),
       ultimas_paradas: stops,
-      critical_state: criticalVib || criticalRisk || criticalStops
+      critical_state: criticalState,
+      notification
     };
   }
 

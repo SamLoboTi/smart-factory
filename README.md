@@ -57,8 +57,18 @@ Ele consulta os endpoints do backend e retorna respostas com contexto operaciona
 - Pre-alerta a partir de 60% de risco.
 - Alerta critico a partir de 80% de risco.
 - Registro de alertas no banco.
-- Base para notificacoes via WhatsApp/Twilio.
+- Notificacoes via WhatsApp/Twilio configuraveis pela tela `/notificacoes`.
+- Destinatario salvo em banco separado com criptografia em repouso.
+- Cooldown para evitar spam de alertas.
 - Deteccao de tendencias anormais antes de falhas criticas.
+
+### Configuracao Segura de WhatsApp
+
+- Tela operacional para cadastrar responsavel e telefone.
+- Endpoint seguro no NestJS para salvar a configuracao.
+- Credenciais Twilio somente no backend por variaveis de ambiente.
+- O React nunca recebe SID, token, numero de origem ou telefone completo.
+- Resposta publica sempre mascarada, por exemplo `whatsapp:+********5678`.
 
 ### Deploy e Tunnels
 
@@ -110,6 +120,9 @@ Endpoints principais:
 - `POST /predict-failure`
 - `POST /detect-anomaly`
 - `GET /equipment/:id/risk`
+- `GET /notifications/config`
+- `POST /notifications/config`
+- `POST /notifications/test`
 
 ### 3. Frontend React + Vite
 
@@ -129,6 +142,7 @@ Arquivos principais:
 - `frontend/src/components/KPICards.tsx`
 - `frontend/src/components/RiskGauge.tsx`
 - `frontend/src/components/ChatAssistant.tsx`
+- `frontend/src/pages/Notificacoes.tsx`
 
 ## Arquitetura Interativa
 
@@ -231,6 +245,34 @@ Portas locais configuradas:
 - Backend API: `http://localhost:3002`
 
 Observacao: o projeto usa portas alternativas para evitar conflito com outros servicos locais.
+
+## Ativar WhatsApp/Twilio
+
+Crie um arquivo `.env` a partir de `.env.example` e configure:
+
+```bash
+TWILIO_ACCOUNT_SID=your_account_sid_here
+TWILIO_AUTH_TOKEN=your_auth_token_here
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+NOTIFICATION_DATABASE_PATH=secure-data/notification_config.db
+NOTIFICATION_ENCRYPTION_KEY=troque-por-uma-chave-forte
+```
+
+Depois suba o sistema e acesse:
+
+```text
+http://localhost:5174/notificacoes
+```
+
+Na tela de notificacoes, cadastre o responsavel, informe o WhatsApp com codigo do pais e DDD, escolha a severidade minima e envie uma mensagem de teste.
+
+Seguranca aplicada:
+
+- credenciais Twilio ficam apenas no backend;
+- telefone do destinatario e criptografado no banco `secure-data/notification_config.db`;
+- frontend recebe apenas telefone mascarado;
+- CORS e hosts do Vite sao configurados por lista explicita;
+- `.trycloudflare.com` nao fica liberado no backend automaticamente.
 
 ## Link Publico com Tunelamento
 

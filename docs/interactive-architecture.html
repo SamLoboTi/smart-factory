@@ -301,14 +301,14 @@
         <g class="node" data-id="notify" transform="translate(860 304)">
           <rect width="130" height="78" rx="8"></rect>
           <text class="label" x="18" y="30">WhatsApp</text>
-          <text class="meta" x="18" y="52">Twilio ready</text>
+          <text class="meta" x="18" y="52">Twilio ativo</text>
         </g>
 
         <g class="node" data-id="api" transform="translate(650 456)">
           <rect width="210" height="104" rx="8"></rect>
           <text class="label" x="18" y="31">API NestJS</text>
           <text class="meta" x="18" y="54">REST endpoints</text>
-          <text class="meta" x="18" y="72">chat e inferencia</text>
+          <text class="meta" x="18" y="72">chat, IA e configs</text>
           <text class="meta" x="18" y="90">porta 3002</text>
         </g>
 
@@ -400,26 +400,26 @@
       notify: {
         tag: 'Notificacao',
         title: 'WhatsApp / Twilio',
-        description: 'Canal de notificacao preparado para envio de alertas, relatorios e imagens de dashboard.',
-        tech: ['Twilio', 'WhatsApp API', 'NotificationService'],
-        responsibilities: ['Enviar alerta preventivo', 'Enviar alerta critico', 'Simular notificacao sem credenciais'],
-        enterprise: ['Templates aprovados', 'Retry e dead-letter', 'Preferencias por usuario e planta']
+        description: 'Canal de notificacao ativado para alertas via WhatsApp, com configuracao operacional salva fora do banco de telemetria.',
+        tech: ['Twilio', 'WhatsApp API', 'NotificationsModule', 'SQLite isolado', 'AES-256-GCM'],
+        responsibilities: ['Cadastrar destinatario com telefone mascarado', 'Enviar alerta preventivo ou critico', 'Testar envio pelo dashboard', 'Registrar eventos com cooldown'],
+        enterprise: ['Templates aprovados', 'Retry e dead-letter', 'Preferencias por usuario e planta', 'Gestao de segredos com Vault']
       },
       api: {
         tag: 'Backend',
         title: 'API NestJS',
         description: 'Gateway REST entre frontend, banco e inferencia Python. Tambem atende o assistente inteligente.',
         tech: ['NestJS', 'TypeORM', 'Node.js', 'child_process spawn'],
-        responsibilities: ['Expor sensores e KPIs', 'Expor alertas', 'Executar inferencia Python', 'Responder chat operacional'],
-        enterprise: ['JWT/OIDC', 'RBAC', 'OpenAPI', 'rate limiting', 'observabilidade']
+        responsibilities: ['Expor sensores e KPIs', 'Expor alertas', 'Executar inferencia Python', 'Configurar notificacoes', 'Responder chat operacional'],
+        enterprise: ['JWT/OIDC', 'RBAC', 'OpenAPI', 'rate limiting', 'observabilidade', 'secret manager']
       },
       frontend: {
         tag: 'UI',
         title: 'Dashboard React',
         description: 'Interface operacional para acompanhar KPIs, risco, graficos, alertas e conversar com o assistente.',
         tech: ['React', 'Vite', 'Recharts', 'Tailwind/CSS'],
-        responsibilities: ['Exibir KPIs', 'Exibir gauge de risco', 'Consultar API', 'Mostrar assistente inteligente'],
-        enterprise: ['Design system', 'perfis por operador', 'dashboards por fabrica', 'PWA/mobile']
+        responsibilities: ['Exibir KPIs', 'Exibir gauge de risco', 'Configurar notificacoes', 'Consultar API', 'Mostrar assistente inteligente'],
+        enterprise: ['Design system', 'perfis por operador', 'dashboards por fabrica', 'PWA/mobile', 'zero secrets no browser']
       },
       assistant: {
         tag: 'ChatOps',

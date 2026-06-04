@@ -121,11 +121,12 @@ export const ChatAssistant = () => {
                         </div>
 
                         {msg.type === 'user' && (
-                            <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Samantha"
-                                alt="User"
-                                className="w-8 h-8 rounded-full ml-2 border border-white/20 shrink-0"
-                            />
+                            <div
+                                aria-label="Usuario"
+                                className="w-8 h-8 rounded-full ml-2 border border-white/20 shrink-0 bg-white/10 flex items-center justify-center text-xs font-bold text-white"
+                            >
+                                SA
+                            </div>
                         )}
                     </div>
                 ))}

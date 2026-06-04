@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = '';
 
 export interface SensorReading {
     id: number;
@@ -19,6 +19,32 @@ export interface KPIResponse {
     tempo_parado_registros: number;
     vibracao_media_operacao: number;
     status_geral: string;
+}
+
+export interface NotificationConfig {
+    enabled: boolean;
+    recipientName: string;
+    recipientPhoneMasked: string;
+    minSeverity: 'pre_alert' | 'critical';
+    preAlertThreshold: number;
+    criticalThreshold: number;
+    cooldownMinutes: number;
+    updatedAt: string | null;
+    provider: string;
+    twilioConfigured: boolean;
+    encryptionAtRest: boolean;
+    encryptionKeyConfigured: boolean;
+    database: string;
+}
+
+export interface NotificationConfigInput {
+    enabled: boolean;
+    recipientName: string;
+    recipientPhone: string;
+    minSeverity: 'pre_alert' | 'critical';
+    preAlertThreshold: number;
+    criticalThreshold: number;
+    cooldownMinutes: number;
 }
 
 export const api = {
@@ -52,7 +78,7 @@ export const api = {
             return await res.json();
         } catch (error) {
             console.error(error);
-            return { vibracao_alta: [], ultimas_paradas: [] };
+            return { vibracao_alta: [], ultimas_paradas: [], risco_alto: [] };
         }
     },
 
@@ -67,7 +93,47 @@ export const api = {
             return await res.json();
         } catch (error) {
             console.error(error);
-            return { reply: "Erro de conexão com o assistente." };
+            return { reply: 'Erro de conexao com o assistente.' };
         }
+    },
+
+    getNotificationConfig: async (): Promise<NotificationConfig | null> => {
+        try {
+            const res = await fetch(`${API_URL}/notifications/config`);
+            if (!res.ok) throw new Error('Falha ao buscar configuracao de notificacoes');
+            return await res.json();
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    },
+
+    saveNotificationConfig: async (payload: NotificationConfigInput): Promise<NotificationConfig> => {
+        const res = await fetch(`${API_URL}/notifications/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.message || 'Falha ao salvar configuracao');
+        }
+
+        return await res.json();
+    },
+
+    sendNotificationTest: async () => {
+        const res = await fetch(`${API_URL}/notifications/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.message || 'Falha ao enviar teste');
+        }
+
+        return await res.json();
     }
 };

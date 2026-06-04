@@ -60,8 +60,11 @@ Edite `.env` e preencha:
 TWILIO_ACCOUNT_SID=your_account_sid_here
 TWILIO_AUTH_TOKEN=your_auth_token_here
 TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
-RECIPIENT_WHATSAPP=whatsapp:+5511912040306
+NOTIFICATION_DATABASE_PATH=secure-data/notification_config.db
+NOTIFICATION_ENCRYPTION_KEY=troque-por-uma-chave-forte
 ```
+
+O destinatario nao deve ficar no `.env` nem no frontend. Configure o responsavel pela tela `/notificacoes`; o telefone sera salvo em banco separado e criptografado.
 
 **Como obter credenciais Twilio:**
 1. Crie conta em [twilio.com](https://www.twilio.com/try-twilio)

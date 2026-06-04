@@ -26,11 +26,19 @@ services:
       - "3002:3000"
     volumes:
       - ./data:/app/data
+      - ./secure-data:/app/secure-data
       - ./src:/app/src # Mount src so changes in python logic reflect immediately
       - ./platform:/app/platform # Mount for dev (strictly speaking requires dev start command)
       - /app/platform/node_modules
     environment:
       - DATABASE_PATH=/app/data/smart_factory.db
+      - NOTIFICATION_DATABASE_PATH=/app/secure-data/notification_config.db
+      - NOTIFICATION_ENCRYPTION_KEY=${NOTIFICATION_ENCRYPTION_KEY:-change-this-dev-key}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_WHATSAPP_NUMBER=${TWILIO_WHATSAPP_NUMBER:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5174}
+      - CORS_TUNNEL_ORIGINS=${CORS_TUNNEL_ORIGINS:-}
     depends_on:
       - python-core
 
@@ -47,6 +55,8 @@ services:
       - ./frontend/public:/app/public
     environment:
       - VITE_PROXY_TARGET=http://backend:3000
+      - VITE_ENABLE_TUNNEL=true
+      - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-}
     depends_on:
       - backend
 
@@ -61,3 +71,4 @@ services:
 
 volumes:
   data:
+  secure-data:

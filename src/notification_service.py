@@ -22,7 +22,7 @@ class NotificationService:
     - TWILIO_ACCOUNT_SID
     - TWILIO_AUTH_TOKEN
     - TWILIO_WHATSAPP_NUMBER (ex: whatsapp:+14155238886)
-    - RECIPIENT_WHATSAPP (ex: whatsapp:+5511912040306)
+    - RECIPIENT_WHATSAPP (opcional no legado; no NestJS use /notificacoes)
     """
     
     def __init__(self):
@@ -35,7 +35,7 @@ class NotificationService:
         account_sid = os.getenv('TWILIO_ACCOUNT_SID')
         auth_token = os.getenv('TWILIO_AUTH_TOKEN')
         self.from_number = os.getenv('TWILIO_WHATSAPP_NUMBER', 'whatsapp:+14155238886')
-        self.to_number = os.getenv('RECIPIENT_WHATSAPP', 'whatsapp:+5511912040306')
+        self.to_number = os.getenv('RECIPIENT_WHATSAPP', '')
         
         # Inicializar cliente Twilio
         if TWILIO_AVAILABLE and account_sid and auth_token:

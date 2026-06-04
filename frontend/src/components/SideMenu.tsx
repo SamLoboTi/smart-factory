@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, LayoutDashboard, Settings, AlertOctagon, BarChart2, Brain, HelpCircle, User, LogOut } from 'lucide-react';
+import { X, LayoutDashboard, Settings, AlertOctagon, BarChart2, Brain, HelpCircle, User, LogOut, MessageCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface MenuProps {
@@ -16,6 +16,7 @@ export const SideMenu = ({ isOpen, onClose }: MenuProps) => {
         { icon: AlertOctagon, label: 'Paradas', path: '/paradas' },
         { icon: BarChart2, label: 'KPIs', path: '/kpis' },
         { icon: Brain, label: 'Previsão (IA)', path: '/previsao' },
+        { icon: MessageCircle, label: 'Notificacoes', path: '/notificacoes' },
         { icon: HelpCircle, label: 'Suporte', path: '/suporte' },
     ];
 

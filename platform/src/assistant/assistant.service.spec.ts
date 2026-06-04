@@ -4,7 +4,6 @@ import { AppService } from '../app.service';
 
 describe('AssistantService', () => {
     let service: AssistantService;
-    let appService: AppService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -13,19 +12,49 @@ describe('AssistantService', () => {
                 {
                     provide: AppService,
                     useValue: {
-                        processChat: jest.fn().mockResolvedValue({ reply: 'Mocked Chat' }),
                         getKPIs: jest.fn().mockResolvedValue({
-                            oee: 80, mtbf: 100, mttr: 10, tempo_parado_registros: 5, disponibilidade: 90, vibracao_media_operacao: 2.5
+                            oee: 80,
+                            mtbf: 100,
+                            mttr: 10,
+                            tempo_parado_registros: 5,
+                            disponibilidade: 90,
+                            vibracao_media_operacao: 2.5,
+                            status_geral: 'Alerta',
                         }),
-                        getAlerts: jest.fn().mockResolvedValue({ vibracao_alta: [], risco_alto: [], ultimas_paradas: [] }),
-                        getLatestReadings: jest.fn().mockResolvedValue([{ status: 'rodando', temperatura: 50, vibracao: 1.5, device_id: 'DEV-001' }])
+                        getAlerts: jest.fn().mockResolvedValue({
+                            vibracao_alta: [],
+                            risco_alto: [],
+                            ultimas_paradas: [],
+                        }),
+                        getLatestReadings: jest.fn().mockResolvedValue([
+                            {
+                                status: 'rodando',
+                                temperatura: 50,
+                                vibracao: 1.5,
+                                pressure: 10,
+                                device_id: 'DEV-001',
+                            },
+                        ]),
+                        getEquipmentRisk: jest.fn().mockResolvedValue({
+                            device_id: 'DEV-001',
+                            samples: 20,
+                            failure_risk: 0.72,
+                            anomaly_score: 0.44,
+                            is_anomaly: false,
+                            rul_hours: 120,
+                            rul_days: 5,
+                            model_version: 'v1',
+                            explanation: [
+                                'High failure risk detected by the predictive model.',
+                                'Vibration is above the historical safe range.',
+                            ],
+                        }),
                     },
                 },
             ],
         }).compile();
 
         service = module.get<AssistantService>(AssistantService);
-        appService = module.get<AppService>(AppService);
     });
 
     it('should be defined', () => {
@@ -34,45 +63,55 @@ describe('AssistantService', () => {
 
     it('should return quick report', async () => {
         const result = await service.processMessage('relatorio rapido');
-        expect(result.reply).toContain('Relatório Rápido');
-        expect(result.reply).toContain('80%'); // Valor do OEE mockado
+        expect(result.reply).toContain('Relatorio rapido');
+        expect(result.reply).toContain('80%');
     });
 
     it('should parse standalone date as complete report', async () => {
         const result = await service.processMessage('10/02/2026');
-        expect(result.reply).toContain('Relatório Completo');
+        expect(result.reply).toContain('Relatorio completo');
         expect(result.reply).toContain('10/02/2026');
     });
 
     it('should prioritize date in mixed commands', async () => {
-        // "relatorio rapido" com data deve ser interpretado como histórico daquela data
         const result = await service.processMessage('relatorio rapido 15/03/2026');
-        expect(result.reply).toContain('Relatório Completo');
+        expect(result.reply).toContain('Relatorio completo');
         expect(result.reply).toContain('15/03/2026');
     });
 
     it('should parse date for complete report command', async () => {
         const result = await service.processMessage('relatorio completo 10/02/2025 14:00');
-        expect(result.reply).toContain('Relatório Completo');
+        expect(result.reply).toContain('Relatorio completo');
         expect(result.reply).toContain('10/02/2025');
         expect(result.reply).toContain('14:00');
     });
 
     it('should handle invalid date format gracefully', async () => {
-        // O regex exige dd/mm/aaaa, se não bater, cai no fallback ou fluxo normal
         const result = await service.processMessage('99-99-2025');
-        // Como não bate regex, e não tem "relatorio", vai para fallback
-        expect(result.reply).toContain('Desculpe, não entendi');
+        expect(result.reply).toContain('Nao encontrei');
     });
 
     it('should verify status query', async () => {
         const result = await service.processMessage('status da linha');
-        expect(result.reply).toContain('Status Geral');
+        expect(result.reply).toContain('Status atual');
     });
 
     it('should handle specific machine status', async () => {
-        const result = await service.processMessage('status da maquina 2');
-        expect(result.reply).toContain('Status da '); // maquina 2
-        expect(result.reply).toContain('Operando normalmente');
+        const result = await service.processMessage('status DEV-001');
+        expect(result.reply).toContain('Status atual');
+        expect(result.reply).toContain('DEV-001');
+    });
+
+    it('should answer natural predictive maintenance questions', async () => {
+        const result = await service.processMessage('qual e a previsao analisada');
+        expect(result.reply).toContain('Previsao analisada');
+        expect(result.reply).toContain('Risco de falha');
+        expect(result.reply).toContain('Vida util restante');
+    });
+
+    it('should explain KPI questions', async () => {
+        const result = await service.processMessage('como esta o OEE?');
+        expect(result.reply).toContain('OEE atual');
+        expect(result.reply).toContain('80%');
     });
 });

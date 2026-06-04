@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SensorLeitura } from './sensor-leitura.entity';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { spawn } from 'child_process';
+import { join } from 'path';
 
 @Injectable()
 export class AppService {
@@ -20,6 +18,40 @@ export class AppService {
       order: { id: 'DESC' },
       take: 20,
     });
+  }
+
+  async predictFailure(payload: Record<string, unknown>) {
+    return this.runPythonInference('predict-failure', payload);
+  }
+
+  async detectAnomaly(payload: Record<string, unknown>) {
+    return this.runPythonInference('detect-anomaly', payload);
+  }
+
+  async getEquipmentRisk(deviceId: string) {
+    const readings = await this.sensorRepo.find({
+      where: { device_id: deviceId },
+      order: { id: 'DESC' },
+      take: 30,
+    });
+
+    const normalizedReadings = readings.reverse().map((reading) => ({
+      timestamp: reading.timestamp,
+      device_id: reading.device_id,
+      temperatura: reading.temperatura,
+      vibracao: reading.vibracao,
+      pressure: reading.pressure,
+      status: reading.status,
+      risk_score: reading.riskScore,
+    }));
+
+    const inference = await this.runPythonInference('risk', { readings: normalizedReadings });
+
+    return {
+      device_id: deviceId,
+      samples: normalizedReadings.length,
+      ...inference,
+    };
   }
 
   // 2. /kpis: Cálculos agregados
@@ -266,5 +298,54 @@ ${recommendation}`;
     };
 
     return report;
+  }
+
+  private runPythonInference(mode: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const projectRoot = join(process.cwd(), '..');
+    const scriptPath = join(projectRoot, 'src', 'inference_cli.py');
+    const modelBundlePath = join(projectRoot, 'models', 'predictive_maintenance_bundle_v1.pkl');
+    const pythonExecutable = process.env.PYTHON_EXECUTABLE || 'python';
+
+    return new Promise((resolve, reject) => {
+      const child = spawn(pythonExecutable, [scriptPath, mode], {
+        env: {
+          ...process.env,
+          MODEL_BUNDLE_PATH: process.env.MODEL_BUNDLE_PATH || modelBundlePath,
+          PYTHONPATH: projectRoot,
+        },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('error', (error) => reject(error));
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python inference failed (${code}): ${stderr}`));
+          return;
+        }
+
+        try {
+          const lines = stdout.trim().split(/\r?\n/);
+          const jsonLine = lines[lines.length - 1] || '{}';
+          resolve(JSON.parse(jsonLine));
+        } catch (error) {
+          reject(new Error(`Invalid Python inference response: ${stdout}`));
+        }
+      });
+
+      child.stdin.write(JSON.stringify(payload));
+      child.stdin.end();
+    });
   }
 }

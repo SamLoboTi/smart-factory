@@ -14,6 +14,7 @@ RUN npm install
 # Copy shared source code (Python scripts needed by Backend)
 WORKDIR /app
 COPY src/ ./src/
+COPY models/ ./models/
 COPY requirements.txt .
 
 # Install Python deps for assistant

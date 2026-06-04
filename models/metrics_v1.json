@@ -1,0 +1,133 @@
+{
+  "version": "v1",
+  "trained_at": "2026-06-03T19:49:15.954626+00:00",
+  "dataset": {
+    "path": "data/synthetic_industrial_maintenance.csv",
+    "rows": 5000,
+    "failure_rate": 0.0156
+  },
+  "features": [
+    "temperatura",
+    "vibracao",
+    "corrente_eletrica",
+    "rotacao",
+    "carga_maquina",
+    "tempo_operacao_horas",
+    "historico_manutencao",
+    "dias_desde_ultima_manutencao",
+    "turno",
+    "tipo_equipamento"
+  ],
+  "failure_prediction": {
+    "best_model": "logistic_regression",
+    "models": [
+      {
+        "model": "logistic_regression",
+        "precision_failure": 0.03773584905660377,
+        "recall_failure": 0.631578947368421,
+        "f1_failure": 0.0712166172106825,
+        "roc_auc": 0.7665996836119543,
+        "pr_auc": 0.0767496021030464,
+        "confusion_matrix": [
+          [
+            925,
+            306
+          ],
+          [
+            7,
+            12
+          ]
+        ],
+        "false_negative_cost": {
+          "false_negatives": 7,
+          "cost_per_failure": 50000.0,
+          "estimated_total_cost": 350000.0
+        },
+        "classification_report": {
+          "0": {
+            "precision": 0.9924892703862661,
+            "recall": 0.7514216084484159,
+            "f1-score": 0.8552935737401757,
+            "support": 1231.0
+          },
+          "1": {
+            "precision": 0.03773584905660377,
+            "recall": 0.631578947368421,
+            "f1-score": 0.0712166172106825,
+            "support": 19.0
+          },
+          "accuracy": 0.7496,
+          "macro avg": {
+            "precision": 0.515112559721435,
+            "recall": 0.6915002779084185,
+            "f1-score": 0.4632550954754291,
+            "support": 1250.0
+          },
+          "weighted avg": {
+            "precision": 0.9779770183820552,
+            "recall": 0.7496,
+            "f1-score": 0.8433756040009274,
+            "support": 1250.0
+          }
+        }
+      },
+      {
+        "model": "random_forest_tuned",
+        "precision_failure": 0.0,
+        "recall_failure": 0.0,
+        "f1_failure": 0.0,
+        "roc_auc": 0.7403052717089229,
+        "pr_auc": 0.04401681656144021,
+        "confusion_matrix": [
+          [
+            1227,
+            4
+          ],
+          [
+            19,
+            0
+          ]
+        ],
+        "false_negative_cost": {
+          "false_negatives": 19,
+          "cost_per_failure": 50000.0,
+          "estimated_total_cost": 950000.0
+        },
+        "classification_report": {
+          "0": {
+            "precision": 0.9847512038523274,
+            "recall": 0.9967506092607636,
+            "f1-score": 0.9907145740815503,
+            "support": 1231.0
+          },
+          "1": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 19.0
+          },
+          "accuracy": 0.9816,
+          "macro avg": {
+            "precision": 0.4923756019261637,
+            "recall": 0.4983753046303818,
+            "f1-score": 0.49535728704077514,
+            "support": 1250.0
+          },
+          "weighted avg": {
+            "precision": 0.9697829855537721,
+            "recall": 0.9816,
+            "f1-score": 0.9756557125555108,
+            "support": 1250.0
+          }
+        }
+      }
+    ]
+  },
+  "anomaly_detection": {
+    "model": "IsolationForest",
+    "contamination": 0.08
+  },
+  "rul": {
+    "mae_hours": 111.57094632807795
+  }
+}

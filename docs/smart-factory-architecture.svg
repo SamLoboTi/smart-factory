@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Smart Factory Architecture</title>
+  <desc id="desc">Architecture diagram for the Smart Factory monitoring, predictive maintenance and dashboard system.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="48%" stop-color="#0d1b31"/>
+      <stop offset="100%" stop-color="#101827"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#41a6ff"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#20d49b"/>
+      <stop offset="100%" stop-color="#9be15d"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffcb66"/>
+      <stop offset="100%" stop-color="#ff7b73"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#7f93b6"/>
+    </marker>
+    <style>
+      .title { fill: #f8fbff; font: 800 44px Segoe UI, Arial, sans-serif; letter-spacing: 0; }
+      .subtitle { fill: #aab8d0; font: 400 18px Segoe UI, Arial, sans-serif; }
+      .lane-title { fill: #aab8d0; font: 700 14px Segoe UI, Arial, sans-serif; letter-spacing: 1.4px; }
+      .box-title { fill: #f8fbff; font: 800 20px Segoe UI, Arial, sans-serif; }
+      .box-text { fill: #c6d2e6; font: 400 14px Segoe UI, Arial, sans-serif; }
+      .small { fill: #90a2c0; font: 400 12px Segoe UI, Arial, sans-serif; }
+      .lane { fill: rgba(255,255,255,0.035); stroke: rgba(255,255,255,0.11); stroke-width: 1; }
+      .box { fill: #13213a; stroke: rgba(255,255,255,0.16); stroke-width: 1.2; filter: url(#shadow); }
+      .edge { stroke: #7f93b6; stroke-width: 2.4; marker-end: url(#arrow); fill: none; opacity: 0.86; }
+      .chip { fill: rgba(255,255,255,0.06); stroke: rgba(255,255,255,0.12); }
+    </style>
+  </defs>
+
+  <rect width="1280" height="760" fill="url(#bg)"/>
+  <circle cx="106" cy="88" r="180" fill="#2563eb" opacity="0.16"/>
+  <circle cx="1132" cy="124" r="220" fill="#14b8a6" opacity="0.12"/>
+  <circle cx="1120" cy="700" r="180" fill="#7c3aed" opacity="0.12"/>
+
+  <text x="56" y="68" class="title">Smart Factory Project</text>
+  <text x="58" y="102" class="subtitle">Industrial monitoring, predictive maintenance, intelligent assistant and real-time dashboard</text>
+
+  <rect x="48" y="138" width="1184" height="132" rx="18" class="lane"/>
+  <text x="70" y="166" class="lane-title">FACTORY FLOOR AND EDGE</text>
+
+  <rect x="48" y="302" width="1184" height="164" rx="18" class="lane"/>
+  <text x="70" y="330" class="lane-title">PYTHON CORE, AI AND DATA</text>
+
+  <rect x="48" y="498" width="1184" height="164" rx="18" class="lane"/>
+  <text x="70" y="526" class="lane-title">API, DASHBOARD AND DECISION LAYER</text>
+
+  <path class="edge" d="M246 206 C332 206 322 366 394 366"/>
+  <path class="edge" d="M586 378 L690 378"/>
+  <path class="edge" d="M486 342 C486 292 486 260 486 230"/>
+  <path class="edge" d="M574 218 C650 236 636 318 704 350"/>
+  <path class="edge" d="M780 426 C780 470 780 500 780 542"/>
+  <path class="edge" d="M688 584 L560 584"/>
+  <path class="edge" d="M900 584 L990 584"/>
+  <path class="edge" d="M322 408 C492 474 896 438 984 396"/>
+  <path class="edge" d="M250 586 L170 586"/>
+
+  <g transform="translate(86 176)">
+    <rect width="190" height="78" rx="14" class="box" stroke="url(#blue)"/>
+    <rect x="16" y="16" width="44" height="44" rx="12" fill="url(#blue)" opacity="0.95"/>
+    <text x="74" y="31" class="box-title">IoT Sensors</text>
+    <text x="74" y="53" class="box-text">temperature, vibration</text>
+    <text x="74" y="70" class="box-text">pressure and status</text>
+  </g>
+
+  <g transform="translate(376 342)">
+    <rect width="232" height="96" rx="14" class="box" stroke="url(#green)"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="url(#green)" opacity="0.95"/>
+    <text x="80" y="34" class="box-title">Python Core</text>
+    <text x="80" y="58" class="box-text">ingestion, processing</text>
+    <text x="80" y="76" class="box-text">analytics and alerts</text>
+  </g>
+
+  <g transform="translate(366 150)">
+    <rect width="250" height="92" rx="14" class="box" stroke="url(#violet)"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="url(#violet)" opacity="0.95"/>
+    <text x="80" y="34" class="box-title">Predictive AI</text>
+    <text x="80" y="58" class="box-text">failure risk, anomaly</text>
+    <text x="80" y="76" class="box-text">RUL and explanations</text>
+  </g>
+
+  <g transform="translate(690 342)">
+    <rect width="210" height="96" rx="14" class="box" stroke="#53627f"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="#334155"/>
+    <text x="80" y="34" class="box-title">SQLite Data Hub</text>
+    <text x="80" y="58" class="box-text">sensor readings</text>
+    <text x="80" y="76" class="box-text">events and alerts</text>
+  </g>
+
+  <g transform="translate(90 354)">
+    <rect width="240" height="92" rx="14" class="box" stroke="url(#amber)"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="url(#amber)" opacity="0.95"/>
+    <text x="80" y="34" class="box-title">Preventive Alerts</text>
+    <text x="80" y="58" class="box-text">pre-alert 60%</text>
+    <text x="80" y="76" class="box-text">critical alert 80%</text>
+  </g>
+
+  <g transform="translate(986 344)">
+    <rect width="176" height="86" rx="14" class="box" stroke="#22c55e"/>
+    <rect x="18" y="18" width="42" height="42" rx="12" fill="#22c55e" opacity="0.9"/>
+    <text x="74" y="34" class="box-title">WhatsApp</text>
+    <text x="74" y="58" class="box-text">Twilio ready</text>
+  </g>
+
+  <g transform="translate(688 542)">
+    <rect width="232" height="104" rx="14" class="box" stroke="url(#blue)"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="url(#blue)" opacity="0.95"/>
+    <text x="80" y="34" class="box-title">NestJS API</text>
+    <text x="80" y="58" class="box-text">REST, KPIs, inference</text>
+    <text x="80" y="76" class="box-text">assistant orchestration</text>
+    <text x="80" y="94" class="small">port 3002</text>
+  </g>
+
+  <g transform="translate(316 542)">
+    <rect width="244" height="104" rx="14" class="box" stroke="#38bdf8"/>
+    <rect x="18" y="18" width="46" height="46" rx="12" fill="#38bdf8" opacity="0.95"/>
+    <text x="80" y="34" class="box-title">React Dashboard</text>
+    <text x="80" y="58" class="box-text">charts, KPI cards</text>
+    <text x="80" y="76" class="box-text">risk gauge and chat</text>
+    <text x="80" y="94" class="small">port 5174</text>
+  </g>
+
+  <g transform="translate(988 542)">
+    <rect width="178" height="104" rx="14" class="box" stroke="#a78bfa"/>
+    <rect x="18" y="18" width="42" height="42" rx="12" fill="#a78bfa" opacity="0.95"/>
+    <text x="74" y="34" class="box-title">Assistant</text>
+    <text x="74" y="58" class="box-text">natural questions</text>
+    <text x="74" y="76" class="box-text">system answers</text>
+  </g>
+
+  <g transform="translate(84 546)">
+    <rect width="168" height="92" rx="14" class="box" stroke="#f97316"/>
+    <rect x="18" y="18" width="42" height="42" rx="12" fill="#f97316" opacity="0.95"/>
+    <text x="74" y="34" class="box-title">Tunnel</text>
+    <text x="74" y="58" class="box-text">Cloudflare</text>
+    <text x="74" y="76" class="box-text">public demo</text>
+  </g>
+
+  <g transform="translate(56 692)">
+    <rect class="chip" width="220" height="34" rx="17"/>
+    <circle cx="20" cy="17" r="6" fill="#41a6ff"/>
+    <text x="36" y="22" class="small">React + NestJS + Python</text>
+  </g>
+  <g transform="translate(292 692)">
+    <rect class="chip" width="200" height="34" rx="17"/>
+    <circle cx="20" cy="17" r="6" fill="#a78bfa"/>
+    <text x="36" y="22" class="small">Predictive AI v1</text>
+  </g>
+  <g transform="translate(508 692)">
+    <rect class="chip" width="236" height="34" rx="17"/>
+    <circle cx="20" cy="17" r="6" fill="#ffcb66"/>
+    <text x="36" y="22" class="small">Preventive maintenance</text>
+  </g>
+  <g transform="translate(760 692)">
+    <rect class="chip" width="214" height="34" rx="17"/>
+    <circle cx="20" cy="17" r="6" fill="#20d49b"/>
+    <text x="36" y="22" class="small">Smart Manufacturing</text>
+  </g>
+</svg>

@@ -10,6 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY src/ ./src/
+COPY models/ ./models/
+COPY modelo_falha.pkl .
 COPY run_simulation.py .
 
 # Environment variables

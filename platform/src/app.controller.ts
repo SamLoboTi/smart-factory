@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -36,5 +36,20 @@ export class AppController {
   @Get('report/full')
   async getFullReport() {
     return this.appService.generateFullReport();
+  }
+
+  @Post('predict-failure')
+  async predictFailure(@Body() body: Record<string, unknown>) {
+    return this.appService.predictFailure(body);
+  }
+
+  @Post('detect-anomaly')
+  async detectAnomaly(@Body() body: Record<string, unknown>) {
+    return this.appService.detectAnomaly(body);
+  }
+
+  @Get('equipment/:id/risk')
+  async getEquipmentRisk(@Param('id') id: string) {
+    return this.appService.getEquipmentRisk(id);
   }
 }

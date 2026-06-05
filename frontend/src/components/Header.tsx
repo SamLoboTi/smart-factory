@@ -19,7 +19,7 @@ export const Header = () => {
         { label: 'Equipamentos', path: '/equipamentos' },
         { label: 'Paradas', path: '/paradas' },
         { label: 'KPIs', path: '/kpis' },
-        { label: 'Previsão', path: '/previsao' },
+        { label: 'Previsao', path: '/previsao' },
         { label: 'Notificacoes', path: '/notificacoes' },
         { label: 'Assistente', path: '/suporte' }, // Assistente goes to support or chat? keeping simplified
     ];
@@ -84,7 +84,13 @@ export const Header = () => {
                             <p className="text-sm font-medium text-white">Samantha</p>
                             <p className="text-xs text-gray-400">Operadora Chefe</p>
                         </div>
-                        <Settings className="w-4 h-4 text-gray-400 hover:text-white cursor-pointer" />
+                        <Link
+                            to="/notificacoes"
+                            aria-label="Configurar notificacoes WhatsApp"
+                            title="Configurar notificacoes WhatsApp"
+                        >
+                            <Settings className="w-4 h-4 text-gray-400 hover:text-white cursor-pointer" />
+                        </Link>
                     </div>
                 </div>
             </motion.header>

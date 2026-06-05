@@ -12,6 +12,8 @@ export interface NotificationConfigInput {
   preAlertThreshold: number;
   criticalThreshold: number;
   cooldownMinutes: number;
+  dailyReportEnabled: boolean;
+  dailyReportTime: string;
 }
 
 export interface NotificationConfigRecord {
@@ -23,6 +25,8 @@ export interface NotificationConfigRecord {
   preAlertThreshold: number;
   criticalThreshold: number;
   cooldownMinutes: number;
+  dailyReportEnabled: boolean;
+  dailyReportTime: string;
   updatedAt: string | null;
 }
 
@@ -35,6 +39,8 @@ interface ConfigRow {
   pre_alert_threshold: number;
   critical_threshold: number;
   cooldown_minutes: number;
+  daily_report_enabled: number;
+  daily_report_time: string;
   updated_at: string | null;
 }
 
@@ -64,6 +70,8 @@ export class NotificationConfigStore implements OnModuleInit {
         pre_alert_threshold REAL NOT NULL DEFAULT 0.60,
         critical_threshold REAL NOT NULL DEFAULT 0.80,
         cooldown_minutes INTEGER NOT NULL DEFAULT 15,
+        daily_report_enabled INTEGER NOT NULL DEFAULT 0,
+        daily_report_time TEXT NOT NULL DEFAULT '08:00',
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT
       )
@@ -84,6 +92,8 @@ export class NotificationConfigStore implements OnModuleInit {
     await this.run(`
       INSERT OR IGNORE INTO notification_config (id) VALUES (1)
     `);
+    await this.ensureColumn('notification_config', 'daily_report_enabled', 'INTEGER NOT NULL DEFAULT 0');
+    await this.ensureColumn('notification_config', 'daily_report_time', "TEXT NOT NULL DEFAULT '08:00'");
   }
 
   async getConfig(): Promise<NotificationConfigRecord> {
@@ -98,6 +108,8 @@ export class NotificationConfigStore implements OnModuleInit {
       preAlertThreshold: row?.pre_alert_threshold ?? 0.6,
       criticalThreshold: row?.critical_threshold ?? 0.8,
       cooldownMinutes: row?.cooldown_minutes ?? 15,
+      dailyReportEnabled: Boolean(row?.daily_report_enabled),
+      dailyReportTime: row?.daily_report_time || '08:00',
       updatedAt: row?.updated_at || null,
     };
   }
@@ -118,6 +130,8 @@ export class NotificationConfigStore implements OnModuleInit {
       preAlertThreshold: config.preAlertThreshold,
       criticalThreshold: config.criticalThreshold,
       cooldownMinutes: config.cooldownMinutes,
+      dailyReportEnabled: config.dailyReportEnabled,
+      dailyReportTime: config.dailyReportTime,
       updatedAt: config.updatedAt,
       provider: 'twilio_whatsapp',
       twilioConfigured,
@@ -142,6 +156,8 @@ export class NotificationConfigStore implements OnModuleInit {
             pre_alert_threshold = ?,
             critical_threshold = ?,
             cooldown_minutes = ?,
+            daily_report_enabled = ?,
+            daily_report_time = ?,
             updated_at = ?
         WHERE id = 1
       `,
@@ -154,6 +170,8 @@ export class NotificationConfigStore implements OnModuleInit {
         input.preAlertThreshold,
         input.criticalThreshold,
         input.cooldownMinutes,
+        input.dailyReportEnabled ? 1 : 0,
+        input.dailyReportTime,
         new Date().toISOString(),
       ],
     );
@@ -256,11 +274,27 @@ export class NotificationConfigStore implements OnModuleInit {
     });
   }
 
+  private async ensureColumn(table: string, column: string, definition: string) {
+    const rows = await this.all<{ name: string }>(`PRAGMA table_info(${table})`);
+    if (!rows.some((row) => row.name === column)) {
+      await this.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
   private get<T>(sql: string, params: unknown[] = []) {
     return new Promise<T | undefined>((resolve, reject) => {
       this.db.get(sql, params, (error, row) => {
         if (error) reject(error);
         else resolve(row as T | undefined);
+      });
+    });
+  }
+
+  private all<T>(sql: string, params: unknown[] = []) {
+    return new Promise<T[]>((resolve, reject) => {
+      this.db.all(sql, params, (error, rows) => {
+        if (error) reject(error);
+        else resolve(rows as T[]);
       });
     });
   }

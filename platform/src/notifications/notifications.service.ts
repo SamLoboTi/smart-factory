@@ -45,6 +45,7 @@ export class NotificationsService {
         'Teste de notificacao do Smart Factory.',
         `Destinatario: ${config.recipientName || 'operador responsavel'}`,
         'Canal: WhatsApp via Twilio',
+        config.dailyReportEnabled ? `Relatorio diario ativo as ${config.dailyReportTime}.` : 'Relatorio diario desativado.',
       ].join('\n'),
     }, true);
   }
@@ -157,6 +158,7 @@ export class NotificationsService {
     const preAlertThreshold = Number(input.preAlertThreshold ?? 0.6);
     const criticalThreshold = Number(input.criticalThreshold ?? 0.8);
     const cooldownMinutes = Number(input.cooldownMinutes ?? 15);
+    const dailyReportTime = String(input.dailyReportTime || '08:00');
     const minSeverity = input.minSeverity === 'pre_alert' ? 'pre_alert' : 'critical';
 
     if (!input.recipientName || input.recipientName.trim().length < 2) {
@@ -183,6 +185,10 @@ export class NotificationsService {
       throw new BadRequestException('O cooldown deve estar entre 1 minuto e 24 horas.');
     }
 
+    if (!/^\d{2}:\d{2}$/.test(dailyReportTime)) {
+      throw new BadRequestException('Informe o horario do relatorio diario no formato HH:mm.');
+    }
+
     return {
       enabled: Boolean(input.enabled),
       recipientName: input.recipientName.trim(),
@@ -191,6 +197,8 @@ export class NotificationsService {
       preAlertThreshold,
       criticalThreshold,
       cooldownMinutes,
+      dailyReportEnabled: Boolean(input.dailyReportEnabled),
+      dailyReportTime,
     };
   }
 }

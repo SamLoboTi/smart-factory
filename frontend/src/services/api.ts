@@ -29,6 +29,8 @@ export interface NotificationConfig {
     preAlertThreshold: number;
     criticalThreshold: number;
     cooldownMinutes: number;
+    dailyReportEnabled: boolean;
+    dailyReportTime: string;
     updatedAt: string | null;
     provider: string;
     twilioConfigured: boolean;
@@ -45,6 +47,8 @@ export interface NotificationConfigInput {
     preAlertThreshold: number;
     criticalThreshold: number;
     cooldownMinutes: number;
+    dailyReportEnabled: boolean;
+    dailyReportTime: string;
 }
 
 export const api = {

@@ -15,6 +15,8 @@ export const Notificacoes = () => {
     const [preAlertThreshold, setPreAlertThreshold] = useState(60);
     const [criticalThreshold, setCriticalThreshold] = useState(80);
     const [cooldownMinutes, setCooldownMinutes] = useState(15);
+    const [dailyReportEnabled, setDailyReportEnabled] = useState(false);
+    const [dailyReportTime, setDailyReportTime] = useState('08:00');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
@@ -31,6 +33,8 @@ export const Notificacoes = () => {
                 setPreAlertThreshold(Math.round(current.preAlertThreshold * 100));
                 setCriticalThreshold(Math.round(current.criticalThreshold * 100));
                 setCooldownMinutes(current.cooldownMinutes);
+                setDailyReportEnabled(current.dailyReportEnabled);
+                setDailyReportTime(current.dailyReportTime || '08:00');
             }
             setLoading(false);
         };
@@ -53,6 +57,8 @@ export const Notificacoes = () => {
                 preAlertThreshold: preAlertThreshold / 100,
                 criticalThreshold: criticalThreshold / 100,
                 cooldownMinutes,
+                dailyReportEnabled,
+                dailyReportTime,
             });
             setConfig(saved);
             setRecipientPhone('');
@@ -169,6 +175,32 @@ export const Notificacoes = () => {
                             </label>
                         </div>
 
+                        <div className="mt-4 rounded-lg border border-white/10 bg-black/20 p-4">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h3 className="text-white font-semibold">Relatorio diario</h3>
+                                    <p className="text-sm text-gray-400">Define se o responsavel recebera um resumo diario da planta.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDailyReportEnabled((value) => !value)}
+                                    className={`relative h-8 w-14 rounded-full border transition-colors ${dailyReportEnabled ? 'bg-primary/80 border-primary' : 'bg-white/10 border-white/20'}`}
+                                    aria-label="Ativar relatorio diario"
+                                >
+                                    <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${dailyReportEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                            <label className="space-y-2 block max-w-xs">
+                                <span className="text-sm text-gray-300">Horario de envio</span>
+                                <input
+                                    type="time"
+                                    value={dailyReportTime}
+                                    onChange={(event) => setDailyReportTime(event.target.value)}
+                                    className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-primary"
+                                />
+                            </label>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <label className="space-y-2">
                                 <span className="text-sm text-gray-300">Pre-alerta: {preAlertThreshold}%</span>
@@ -235,6 +267,7 @@ export const Notificacoes = () => {
                                 <StatusRow icon={<BellRing className="w-4 h-4" />} label="Notificacoes" value={config?.enabled ? 'Ativas' : 'Desativadas'} ok={Boolean(config?.enabled)} />
                                 <StatusRow icon={<MessageCircle className="w-4 h-4" />} label="Twilio" value={config?.twilioConfigured ? 'Configurado' : 'Modo simulacao'} ok={Boolean(config?.twilioConfigured)} />
                                 <StatusRow icon={<Lock className="w-4 h-4" />} label="Telefone" value={config?.recipientPhoneMasked || 'Nao configurado'} ok={Boolean(config?.recipientPhoneMasked)} />
+                                <StatusRow icon={<BellRing className="w-4 h-4" />} label="Relatorio diario" value={config?.dailyReportEnabled ? `Ativo ${config.dailyReportTime}` : 'Desativado'} ok={Boolean(config?.dailyReportEnabled)} />
                                 <StatusRow icon={<ShieldCheck className="w-4 h-4" />} label="Banco" value="SQLite isolado" ok />
                                 <StatusRow icon={<ShieldCheck className="w-4 h-4" />} label="Criptografia" value={config?.encryptionKeyConfigured ? 'Chave dedicada' : 'Chave dev'} ok={Boolean(config?.encryptionAtRest)} />
                             </div>

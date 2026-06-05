@@ -16,7 +16,7 @@ O sistema usa dados simulados de sensores industriais para representar equipamen
 
 ![Visao geral do sistema Smart Factory](docs/smart-factory-system-overview.svg)
 
-![Arquitetura Smart Factory](docs/smart-factory-architecture.svg)
+
 
 Versao interativa: [`docs/interactive-architecture.html`](docs/interactive-architecture.html)
 

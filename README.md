@@ -311,6 +311,44 @@ Ultimos links usados durante validacao local:
 
 Esses links sao temporarios e podem expirar.
 
+## Tunnel Estavel
+
+Quick Tunnel e util para demonstracao, mas a URL pode expirar. Para uma URL estavel, use uma destas opcoes:
+
+### ngrok com dominio reservado
+
+Configure no ambiente:
+
+```powershell
+$env:TUNNEL_PROVIDER="ngrok"
+$env:NGROK_DOMAIN="seu-dominio-reservado.ngrok.app"
+```
+
+Depois rode:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-stable-tunnel.ps1
+```
+
+### Cloudflare Named Tunnel
+
+Crie um tunnel nomeado na sua conta Cloudflare e aponte o hostname para o frontend local.
+
+Configure:
+
+```powershell
+$env:TUNNEL_PROVIDER="cloudflare"
+$env:CLOUDFLARE_TUNNEL_NAME="smart-factory"
+```
+
+Depois rode:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-stable-tunnel.ps1
+```
+
+Observacao de seguranca: o frontend precisa permitir explicitamente o host publico em `VITE_ALLOWED_HOSTS`. Nao use `allowedHosts: true` em ambiente exposto.
+
 ## Como Rodar Manualmente
 
 Use tres terminais.

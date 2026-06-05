@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Smart Factory System Overview</title>
+  <desc id="desc">Visao visual do sistema Smart Factory com sensores industriais, core Python, modelos de IA, API NestJS, dashboard React, assistente inteligente e notificacoes WhatsApp.</desc>
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: #101d2f;
+      --panel-2: #14283e;
+      --line: #2d5573;
+      --text: #eef7ff;
+      --muted: #9fb4c7;
+      --cyan: #32d5ff;
+      --green: #46e0a3;
+      --amber: #ffc857;
+      --red: #ff6b6b;
+      --violet: #a78bfa;
+    }
+    .bg { fill: var(--bg); }
+    .grid { stroke: #183047; stroke-width: 1; opacity: .38; }
+    .title { fill: var(--text); font: 700 38px Arial, sans-serif; letter-spacing: 0; }
+    .subtitle { fill: var(--muted); font: 400 17px Arial, sans-serif; }
+    .section { fill: #0b1728; stroke: #234864; stroke-width: 1.5; rx: 18; }
+    .card { fill: var(--panel); stroke: #2b5877; stroke-width: 1.4; rx: 12; filter: url(#softShadow); }
+    .cardAlt { fill: var(--panel-2); stroke: #3a6b8e; stroke-width: 1.3; rx: 12; filter: url(#softShadow); }
+    .label { fill: var(--text); font: 700 18px Arial, sans-serif; }
+    .meta { fill: var(--muted); font: 400 13px Arial, sans-serif; }
+    .kpi { fill: var(--text); font: 700 28px Arial, sans-serif; }
+    .tag { fill: #0c1725; stroke-width: 1; rx: 12; }
+    .tagText { font: 700 12px Arial, sans-serif; }
+    .arrow { stroke: #5bb8db; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    .arrowAmber { stroke: var(--amber); stroke-width: 3; fill: none; marker-end: url(#arrowAmber); }
+    .arrowGreen { stroke: var(--green); stroke-width: 3; fill: none; marker-end: url(#arrowGreen); }
+    .iconStroke { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .greenStroke { stroke: var(--green); }
+    .amberStroke { stroke: var(--amber); }
+    .redStroke { stroke: var(--red); }
+    .tiny { fill: var(--muted); font: 400 11px Arial, sans-serif; }
+    .node:hover .card, .node:hover .cardAlt {
+      stroke: var(--cyan);
+      stroke-width: 2.5;
+    }
+    .node:hover .label {
+      fill: var(--cyan);
+    }
+  </style>
+
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5bb8db"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffc857"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#46e0a3"/>
+    </marker>
+    <linearGradient id="riskGradient" x1="0" x2="1">
+      <stop offset="0%" stop-color="#46e0a3"/>
+      <stop offset="58%" stop-color="#ffc857"/>
+      <stop offset="100%" stop-color="#ff6b6b"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="bg" width="1280" height="720"/>
+  <g opacity=".7">
+    <path class="grid" d="M0 80H1280M0 160H1280M0 240H1280M0 320H1280M0 400H1280M0 480H1280M0 560H1280M0 640H1280"/>
+    <path class="grid" d="M80 0V720M160 0V720M240 0V720M320 0V720M400 0V720M480 0V720M560 0V720M640 0V720M720 0V720M800 0V720M880 0V720M960 0V720M1040 0V720M1120 0V720M1200 0V720"/>
+  </g>
+
+  <text class="title" x="52" y="64">Smart Factory Platform</text>
+  <text class="subtitle" x="54" y="94">Monitoramento industrial, manutencao preditiva, assistente inteligente e alertas preventivos em uma arquitetura Python + NestJS + React.</text>
+
+  <rect class="section" x="40" y="126" width="1200" height="542"/>
+
+  <g class="node" transform="translate(70 170)">
+    <rect class="card" width="205" height="300"/>
+    <text class="label" x="24" y="38">Chao de Fabrica</text>
+    <text class="meta" x="24" y="64">10.000 sensores distribuidos</text>
+    <g transform="translate(28 95)">
+      <circle cx="22" cy="22" r="18" fill="#0f2436" stroke="#32d5ff" stroke-width="2"/>
+      <path class="iconStroke" d="M22 9v13l9 6"/>
+      <text class="meta" x="56" y="20">Temperatura</text>
+      <text class="tiny" x="56" y="38">fornos, motores, salas</text>
+    </g>
+    <g transform="translate(28 155)">
+      <rect x="4" y="4" width="36" height="36" rx="8" fill="#0f2436" stroke="#ffc857" stroke-width="2"/>
+      <path class="iconStroke amberStroke" d="M13 23h5l4-11 6 22 4-11h5"/>
+      <text class="meta" x="56" y="20">Vibracao</text>
+      <text class="tiny" x="56" y="38">rolamentos e eixos</text>
+    </g>
+    <g transform="translate(28 215)">
+      <path d="M7 30h30l-15-26z" fill="#0f2436" stroke="#46e0a3" stroke-width="2"/>
+      <path class="iconStroke greenStroke" d="M23 11l-7 15h7l-4 12 10-17h-7z"/>
+      <text class="meta" x="56" y="20">Corrente e carga</text>
+      <text class="tiny" x="56" y="38">consumo operacional</text>
+    </g>
+  </g>
+
+  <path class="arrow" d="M285 315 C325 315 330 315 365 315"/>
+
+  <g class="node" transform="translate(380 170)">
+    <rect class="cardAlt" width="230" height="300"/>
+    <text class="label" x="24" y="38">Core Python</text>
+    <text class="meta" x="24" y="64">simulacao, ingestao e analytics</text>
+    <g transform="translate(24 92)">
+      <rect class="tag" width="172" height="30" stroke="#32d5ff"/>
+      <text class="tagText" x="14" y="20" fill="#32d5ff">MQTT / telemetria</text>
+    </g>
+    <g transform="translate(24 137)">
+      <rect class="tag" width="182" height="30" stroke="#46e0a3"/>
+      <text class="tagText" x="14" y="20" fill="#46e0a3">processamento KPI</text>
+    </g>
+    <g transform="translate(24 182)">
+      <rect class="tag" width="165" height="30" stroke="#ffc857"/>
+      <text class="tagText" x="14" y="20" fill="#ffc857">alert manager</text>
+    </g>
+    <g transform="translate(24 232)">
+      <text class="kpi" x="0" y="26">84%</text>
+      <text class="meta" x="76" y="14">OEE geral</text>
+      <text class="tiny" x="76" y="32">MTBF, MTTR, paradas</text>
+    </g>
+  </g>
+
+  <path class="arrowGreen" d="M620 255 C650 238 675 238 705 255"/>
+  <path class="arrowAmber" d="M620 385 C650 405 675 405 705 385"/>
+
+  <g class="node" transform="translate(720 145)">
+    <rect class="card" width="240" height="145"/>
+    <text class="label" x="24" y="38">IA Preditiva</text>
+    <text class="meta" x="24" y="64">falha, anomalia e RUL</text>
+    <rect x="24" y="88" width="192" height="16" rx="8" fill="#0c1725"/>
+    <rect x="24" y="88" width="154" height="16" rx="8" fill="url(#riskGradient)"/>
+    <text class="tiny" x="24" y="126">Recall de falha, PR-AUC e custo de falso negativo</text>
+  </g>
+
+  <g class="node" transform="translate(720 330)">
+    <rect class="card" width="240" height="140"/>
+    <text class="label" x="24" y="38">Dados e Modelos</text>
+    <text class="meta" x="24" y="64">SQLite + artefatos versionados</text>
+    <path class="iconStroke" d="M34 87c0-10 28-10 28 0v32c0 10-28 10-28 0zM34 87c0 10 28 10 28 0M34 103c0 10 28 10 28 0"/>
+    <text class="tiny" x="78" y="96">metrics_v1.json</text>
+    <text class="tiny" x="78" y="116">failure_model_v1.pkl</text>
+  </g>
+
+  <path class="arrow" d="M972 300 C1002 300 1010 300 1038 300"/>
+
+  <g class="node" transform="translate(1048 170)">
+    <rect class="cardAlt" width="150" height="110"/>
+    <text class="label" x="22" y="36">NestJS API</text>
+    <text class="meta" x="22" y="62">REST + IA</text>
+    <text class="tiny" x="22" y="86">/predict-failure</text>
+  </g>
+
+  <g class="node" transform="translate(1048 320)">
+    <rect class="cardAlt" width="150" height="150"/>
+    <text class="label" x="22" y="36">React UX</text>
+    <text class="meta" x="22" y="62">dashboard Vite</text>
+    <text class="tiny" x="22" y="88">KPIs, graficos</text>
+    <text class="tiny" x="22" y="108">equipamentos</text>
+    <text class="tiny" x="22" y="128">notificacoes</text>
+  </g>
+
+  <path class="arrowGreen" d="M1045 420 C1010 488 960 520 890 535"/>
+  <g class="node" transform="translate(710 510)">
+    <rect class="card" width="250" height="100"/>
+    <text class="label" x="24" y="36">Assistente Inteligente</text>
+    <text class="meta" x="24" y="62">perguntas sobre planta, alertas e previsoes</text>
+    <text class="tiny" x="24" y="82">"qual e a previsao analisada?"</text>
+  </g>
+
+  <path class="arrowAmber" d="M610 460 C580 545 510 570 430 560"/>
+  <g class="node" transform="translate(180 520)">
+    <rect class="card" width="285" height="92"/>
+    <text class="label" x="24" y="34">WhatsApp Preventivo</text>
+    <text class="meta" x="24" y="60">pre-alerta 60%, critico 80%, relatorio diario</text>
+    <text class="tiny" x="24" y="78">Twilio no backend, telefone mascarado no frontend</text>
+  </g>
+
+  <g transform="translate(74 632)">
+    <circle cx="9" cy="9" r="7" fill="#46e0a3"/>
+    <text class="tiny" x="24" y="13">Dados operacionais</text>
+    <circle cx="164" cy="9" r="7" fill="#ffc857"/>
+    <text class="tiny" x="180" y="13">Alertas e risco</text>
+    <circle cx="306" cy="9" r="7" fill="#32d5ff"/>
+    <text class="tiny" x="322" y="13">APIs e dashboard</text>
+  </g>
+</svg>

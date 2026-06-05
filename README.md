@@ -14,6 +14,8 @@ O Smart Factory Project foi criado como uma plataforma demonstravel de Industria
 
 O sistema usa dados simulados de sensores industriais para representar equipamentos como maquinas CNC, compressores, bombas, esteiras e prensas. A camada de IA estima risco de falha, detecta anomalias, calcula vida util restante (RUL) e explica os principais motivos da previsao.
 
+![Visao geral do sistema Smart Factory](docs/smart-factory-system-overview.svg)
+
 ![Arquitetura Smart Factory](docs/smart-factory-architecture.svg)
 
 Versao interativa: [`docs/interactive-architecture.html`](docs/interactive-architecture.html)

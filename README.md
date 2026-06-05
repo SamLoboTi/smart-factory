@@ -1,4 +1,4 @@
-﻿# Smart Factory Project
+﻿#  FactoryMind AI
 
 Sistema de monitoramento industrial inteligente para Smart Manufacturing, com arquitetura hibrida em Python, NestJS e React. O projeto simula uma fabrica conectada, processa leituras de sensores, calcula KPIs industriais, executa modelos de manutencao preditiva e entrega um dashboard operacional com assistente inteligente.
 
